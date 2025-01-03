@@ -1,0 +1,21 @@
+'use strict';
+import  {Router} from 'express';
+const router = Router();
+
+// import health check routes
+import healthCheckRoute from "../healthCheck/healthCheck.routes";
+router.use('/',healthCheckRoute);
+
+// import routes
+import usersRoute from "./user.route";
+import rbacRoute from "./rbac.route";
+import organizationRoute from "./organization.route";
+import roleRoute from "./role.route";
+
+// route use
+router.use('/user',usersRoute);
+router.use('/rbac',rbacRoute);
+router.use('/organization',organizationRoute);
+router.use('/role',roleRoute);
+
+export default router;
