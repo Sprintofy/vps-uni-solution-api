@@ -8,12 +8,12 @@ import MESSAGES from '../common/messages/messages';
 const healthCheck: IController = async (req, res) => {
     try {
         const results = await healthCheckService.healthCheck();
-        apiResponse.success(res,httpStatusCodes.OK,MESSAGES.COMMON.SUCCESS.FETCH,results);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results);
     } catch (err: any) {
         if (err instanceof Error) {
-            apiResponse.error(res,400,err.message,null);
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, err.message, null);
         } else {
-            apiResponse.error(res,400,MESSAGES.COMMON.SOMETHING_WRONG,null)
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
         }
     }
 };

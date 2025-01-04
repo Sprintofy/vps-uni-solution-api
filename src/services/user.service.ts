@@ -5,6 +5,8 @@ import * as generatePassword from 'generate-password';
 import hashing from '../utilities/hashing';
 import encryption from '../appConfigs/utilities/encryption';
 import CONFIGS from "../config";
+import rbacModel from '../models/rbac.model';
+import CONSTANTS from '../common/constants/constants';
 
 
 const saveUserNPermissionWithTransaction = async (sqlTransaction: any, req: any) => {
@@ -31,8 +33,7 @@ const saveUserNPermissionWithTransaction = async (sqlTransaction: any, req: any)
 }
 
 const loginWithEmail = async (req: any) => {
-
-    // fetch user details
+    // Fetch user details
     const user = await userModel.fetchUserInfoByEmail(req.body.email);
 
     if (user.length == 0) throw new Error("Invalid credentials");
@@ -41,7 +42,7 @@ const loginWithEmail = async (req: any) => {
         throw new Error("User is not authorized..!!");
     }
 
-    //password bcrypt and verify
+    // Password bcrypt and verify
     const match = await hashing.verifyHash(req.body.password, user[0].password);
     if (!match) throw new Error("Invalid password");
 
@@ -55,7 +56,41 @@ const loginWithEmail = async (req: any) => {
     user[0].token = token;
     delete user[0].password;
 
-    return user[0];
+    // Fetch the user's page and CTA permissions
+    const permissions = await rbacModel.fetchUserPagePermission(user[0].user_id, user[0].organization_id, CONSTANTS.STATUS.ACTIVE);
+    const cta_permissions = await rbacModel.fetchUserCtaPermission(user[0].user_id, user[0].organization_id, CONSTANTS.STATUS.ACTIVE);
+
+    const role_access: any = {};
+
+    // Process page permissions and build the role_access structure
+    permissions.forEach((page: any) => {
+        role_access[page.page_path] = {
+            hasAccess: true,
+        };
+
+        // Initialize ctas as an empty object if no CTAs are available
+        role_access[page.page_path].ctas = {};
+
+        // Now check for CTAs associated with the page
+        if (cta_permissions && Array.isArray(cta_permissions)) {
+            // Loop through all the CTAs for the page and add them
+            cta_permissions.forEach((cta: any) => {
+                if (cta.page_id === page.page_id) {
+                    role_access[page.page_path].ctas[cta.cta_path] = true;
+                }
+            });
+        }
+    });
+
+    // Add the /accessDenied entry to the role_access
+    role_access["/accessDenied"] = {
+        hasAccess: true
+    };
+
+    return {
+        ...user[0],
+        role_access
+    };
 }
 
 const fetchUserInfo = async (req: any) => {
@@ -490,7 +525,6 @@ function generateRandomPassword(): string {
 
 /************* User management **************/
 
-// Service for fetching all users
 const fetchAllUsers = async (req: any) => {
     try {
         const { query, pageSize, pageIndex, sort } = req.body;
@@ -505,10 +539,58 @@ const fetchAllUsers = async (req: any) => {
     }
 };
 
+const fetchUserDetailsById = async (req: any): Promise<any> => {
+    try {
+        const userId = req.query.user_id;
+        const userDetails = await userModel.findUserById(userId);
+
+        if (!userDetails.length) throw new Error("User not found");
+        return userDetails[0];
+    } catch (error: any) {
+        throw new Error(`Error fetching user details: ${error.message}`);
+    }
+};
+
+const fetchAllRolesDropdown = async () => {
+    try {
+        const rolesList = await userModel.fetchAllRolesDropdown();
+        const dropdownList = rolesList.map((role: any) => ({
+            label: role.role_name,
+            value: role.role_id
+        }));
+
+        return dropdownList;
+    } catch (error: any) {
+        throw new Error(`Error fetching roles for dropdown: ${error.message}`);
+    }
+};
+
+const fetchUserPermissionsDetailsById = async (req: any): Promise<any> => {
+    try {
+        const { user_id, page_size, page_index } = req.query;
+
+        const offset = (page_index - 1) * page_size;
+
+        const userAccess = await userModel.fetchUserPageNCtaPermissions(user_id, page_size, offset);
+
+        const permissionsCount = await userModel.fetchPagePermissionsCount();
+
+        return {
+            user_access: userAccess,
+            total: permissionsCount[0].page_count
+        };
+    } catch (error: any) {
+        throw new Error(`Error fetching user permissions: ${error.message}`);
+    }
+};
+
 export default {
     saveUserNPermissionWithTransaction,
     loginWithEmail,
     fetchUserInfo,
     saveUser,
-    fetchAllUsers
+    fetchAllUsers,
+    fetchUserDetailsById,
+    fetchAllRolesDropdown,
+    fetchUserPermissionsDetailsById
 }

@@ -80,7 +80,6 @@ const savePageCta = async (req: any) => {
         status: CONSTANTS.STATUS.ACTIVE
     } as any;
     if (req.body.page_id) data.page_id = req.body.page_id;
-    if (req.body.cta_name) data.cta_name = req.body.cta_name;
     if (req.body.cta_label) data.cta_label = req.body.cta_label;
     if (req.body.cta_path) data.cta_path = req.body.cta_path;
     return await rbacPageCtaModel.savePageCta(data);

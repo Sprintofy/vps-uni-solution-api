@@ -12,8 +12,12 @@ router.get('/info', userController.userInfo);
 
 /************* User management **************/
 
-// Fetch all users
 router.post('/fetchAllUsers', celebrate(userSchema.fetchAllUsers), userController.fetchAllUsers);
 
+router.get('/fetchUserDetailsById', celebrate(userSchema.fetchUserDetailsById), userController.fetchUserDetailsById);
+
+router.get('/fetchAllRolesDropdown', userController.fetchAllRolesDropdown);
+
+router.get('/fetchUserPermissionsById', celebrate(userSchema.fetchUserPermissionsById), userController.fetchUserPermissionsById);
 
 export default router;

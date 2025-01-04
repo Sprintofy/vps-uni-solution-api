@@ -182,7 +182,7 @@ const V1_fetchUserPageNCtaPermission = async (req: any): Promise<any> => {
                 title: page.page_label,
                 icon: page.page_icon || '',
                 type: NAV_ITEM_TYPE_COLLAPSE,
-                authority: [NAV_ADMIN, NAV_USER],
+                // authority: [NAV_ADMIN, NAV_USER],
                 translateKey: `nav.${page.page_path.replace(/\//g, '')}.menu${index}`,
                 subMenu: page.sub_menu.map((sub: any) => ({
                     key: `${page.page_path.replace(/\//g, '')}.${sub.page_path.replace(/\//g, '')}`,
@@ -190,7 +190,7 @@ const V1_fetchUserPageNCtaPermission = async (req: any): Promise<any> => {
                     title: sub.page_label,
                     icon: sub.page_icon || '',
                     type: NAV_ITEM_TYPE_ITEM,
-                    authority: [NAV_ADMIN, NAV_USER],
+                    // authority: [NAV_ADMIN, NAV_USER],
                     translateKey: `nav.${sub.page_path.replace(/\//g, '')}`,
                     subMenu: sub.sub_menu || []
                 }))
@@ -247,7 +247,7 @@ const fetchRoleDetailsById = async (req: any): Promise<any> => {
 
         if (!roleDetails.length) throw new Error("Role not found");
 
-        return roleDetails;
+        return roleDetails[0];
     } catch (error: any) {
         throw new Error(`Error fetching role details: ${error.message}`);
     }
@@ -276,10 +276,12 @@ const fetchAllPagesAndCtas = async (): Promise<any> => {
         const roleAccess: any[] = [];
         const ctaLookup: any = {};
 
+        const DEFAULT_CHECKED_VALUE = true;
+
         // Create a lookup for CTAs
         allCtas.forEach((cta: any) => {
             ctaLookup[cta.page_id] = ctaLookup[cta.page_id] || {};
-            ctaLookup[cta.page_id][cta.page_cta_id] = true; // Default to false
+            ctaLookup[cta.page_id][cta.page_cta_id] = DEFAULT_CHECKED_VALUE;
         });
 
         const sortedPages = allPages.sort((a: any, b: any) => a.parent_id - b.parent_id);
@@ -291,7 +293,7 @@ const fetchAllPagesAndCtas = async (): Promise<any> => {
                 page_label: page.page_label,
                 page_icon: page.page_icon,
                 page_path: page.page_path,
-                checked: true, // Default to false
+                checked: DEFAULT_CHECKED_VALUE,
                 sub_pages: []
             };
 
@@ -306,10 +308,10 @@ const fetchAllPagesAndCtas = async (): Promise<any> => {
                         page_label: page.page_label,
                         page_icon: page.page_icon,
                         page_path: page.page_path,
-                        checked: true, // Default to false
+                        checked: DEFAULT_CHECKED_VALUE,
                         ctas: allCtas.filter((cta: any) => cta.page_id === page.page_id).map((cta: any) => ({
                             ...cta,
-                            checked: true // Default to false
+                            checked: DEFAULT_CHECKED_VALUE
                         }))
                     };
                     parentPage.sub_pages.push(childEntry);

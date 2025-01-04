@@ -19,5 +19,17 @@ export default {
             query: Joi.string().allow('')
         }).unknown().options({ abortEarly: false })
     },
+    fetchUserDetailsById: {
+        [Segments.QUERY]: Joi.object().keys({
+            user_id: Joi.number().integer().required()
+        })
+    },
+    fetchUserPermissionsById: {
+        [Segments.QUERY]: Joi.object().keys({
+            user_id: Joi.number().integer().required(),
+            page_size: Joi.number().integer().min(1).required(),
+            page_index: Joi.number().integer().min(1).required()
+        })
+    }
 
 };

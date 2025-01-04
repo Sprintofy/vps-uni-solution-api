@@ -37,13 +37,13 @@ const fetchOrganizationById: IController = async (req: any, res: any) => {
 const fetchOrgRbacById: IController = async (req: any, res: any) => {
     try {
         let result = await organizationService.fetchOrgRbacDetailsById(req);
-        if (result instanceof Error) {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, result.message, null);
-        } else {
-            apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, result);
-        }
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, result);
     } catch (error: any) {
-        apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null);
+        }
     }
 };
 
@@ -53,9 +53,9 @@ const saveOrganizationWithDefaultPermission: IController = async (req: any, res:
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results);
     } catch (error: any) {
         if (error instanceof Error) {
-            apiResponse.error(res, 400, error.message, null);
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
         } else {
-            apiResponse.error(res, 400, MESSAGES.COMMON.SOMETHING_WRONG, null)
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
         }
     }
 }
@@ -68,9 +68,9 @@ const saveTenant: IController = async (req: any, res: any) => {
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.SAVE, results);
     } catch (error: any) {
         if (error instanceof Error) {
-            apiResponse.error(res, 400, error.message, null);
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
         } else {
-            apiResponse.error(res, 400, MESSAGES.COMMON.SOMETHING_WRONG, null);
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null);
         }
     }
 }
@@ -81,9 +81,9 @@ const updateTenant: IController = async (req: any, res: any) => {
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.UPDATE, results);
     } catch (error: any) {
         if (error instanceof Error) {
-            apiResponse.error(res, 400, error.message, null);
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
         } else {
-            apiResponse.error(res, 400, MESSAGES.COMMON.SOMETHING_WRONG, null)
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
         }
     }
 }
@@ -94,9 +94,9 @@ const deleteTenant: IController = async (req: any, res: any) => {
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.DELETE, results);
     } catch (error: any) {
         if (error instanceof Error) {
-            apiResponse.error(res, 400, error.message, null);
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
         } else {
-            apiResponse.error(res, 400, MESSAGES.COMMON.SOMETHING_WRONG, null)
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
         }
     }
 }

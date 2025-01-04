@@ -21,7 +21,7 @@ router.post('/savePage', rbacController.savePage);
 // Save a new CTA (Call to Action)
 router.post('/saveCta', rbacController.saveCta);
 
-// Fetch all pages and CTAs for setting up a new user or role
+// Fetch all pages and CTAs for setting up a new user or role, used for access control.
 router.get('/fetchAllPagesAndCtas', rbacController.fetchAllPagesAndCtas);
 
 router.post('/addNewRole', rbacController.addNewRole);
