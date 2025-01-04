@@ -11,11 +11,13 @@ import usersRoute from "./user.route";
 import rbacRoute from "./rbac.route";
 import organizationRoute from "./organization.route";
 import roleRoute from "./role.route";
+import clientRoute from "./client.route";
 
 // route use
 router.use('/user',usersRoute);
 router.use('/rbac',rbacRoute);
 router.use('/organization',organizationRoute);
 router.use('/role',roleRoute);
+router.use('/clients',clientRoute);
 
 export default router;
