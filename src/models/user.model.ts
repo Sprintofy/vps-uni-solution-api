@@ -137,12 +137,9 @@ class UserModel extends BaseModel {
                     )
                 ) AS sub_pages
             FROM rbac_pages
-            LEFT JOIN rbac_pages AS sub_pages
-            ON sub_pages.parent_id = rbac_pages.page_id
-            LEFT JOIN rbac_user_page_permission rup 
-            ON rbac_pages.page_id = rup.page_id AND rup.user_id = ${userId} AND rup.status = 1
-            LEFT JOIN rbac_user_page_permission srup 
-            ON sub_pages.page_id = srup.page_id AND srup.user_id = ${userId} AND srup.status = 1
+            LEFT JOIN rbac_pages AS sub_pagesON sub_pages.parent_id = rbac_pages.page_id
+            LEFT JOIN rbac_user_page_permission rup  ON rbac_pages.page_id = rup.page_id AND rup.user_id = ${userId} AND rup.status = 1
+            LEFT JOIN rbac_user_page_permission srup ON sub_pages.page_id = srup.page_id AND srup.user_id = ${userId} AND srup.status = 1
             WHERE rbac_pages.parent_id = 0
             GROUP BY rbac_pages.page_id, rbac_pages.page_label, rbac_pages.page_icon, rup.page_id 
             LIMIT ? OFFSET ?;
