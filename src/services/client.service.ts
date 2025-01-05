@@ -1,7 +1,6 @@
 'use strict';
 import CONSTANTS from '../common/constants/constants';
-import fileService from '../services/common/file.service';
-import * as XLSX from "xlsx";
+import fileService from './common/file.service';
 import * as path from 'path';
 
 const import_clients = async (req: any) => {

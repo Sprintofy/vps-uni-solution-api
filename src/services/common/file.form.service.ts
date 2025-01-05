@@ -2,46 +2,42 @@
 import fs from 'fs';
 import * as XLSX from "xlsx";
 import * as path from 'path';
-import multer from 'multer';
+import formidable from 'formidable';
 import csvParse from 'csv-parse';
 import CONSTANTS from '../../common/constants/constants';
 
-// Set up multer storage
-const storage = multer.diskStorage({
-    destination: (req:any, file:any, cb:any) => {
-        const uploadPath = path.join(__dirname, '..', 'uploads'); // Path where files will be stored
-        fs.mkdirSync(uploadPath, { recursive: true });
-        cb(null, uploadPath); // Store files in 'uploads' folder
-    },
-    filename: (req:any, file:any, cb:any) => {
-        const ext = path.extname(file.originalname);
-        cb(null, Date.now() + ext); // Generate a unique filename
-    }
-});
-// Create multer upload middleware
-const upload = multer({ storage }).array('file', 10); // Allow up to 10 files
-// Middleware to handle form data and file upload
+
+// Function to parse form data and get file path
+
 const parseFormData = async (req: any): Promise<{ fields: any; files: { filepath: string; originalFilename: string }[] }> => {
     return new Promise((resolve, reject) => {
-        upload(req, req.res, (err: any) => {
+        const form = formidable({ multiples: true });
+        form.parse(req, (err, fields, files: any) => {
             if (err) {
                 reject(err);
                 return;
             }
 
-            // Normalize fields from the body (e.g., user_id, organization_id)
+            // Normalize fields
             const normalizedFields: { [key: string]: any } = {};
-            for (const key in req.body) {
-                normalizedFields[key] = Array.isArray(req.body[key]) ? req.body[key][0] : req.body[key];
+            for (const key in fields) {
+                normalizedFields[key] = Array.isArray(fields[key]) ? fields[key][0] : fields[key];
             }
 
-            // Extract files from the uploaded files array
+            // Extract files as an array
             let fileArray: { filepath: string; originalFilename: string }[] = [];
-            if (Array.isArray(req.files)) {
-                fileArray = req.files.map((file: any) => ({
-                    filepath: file.path,
-                    originalFilename: file.originalname,
+            if (Array.isArray(files.file)) {
+                fileArray = files.file.map((file:any) => ({
+                    filepath: file.filepath,
+                    originalFilename: file.originalFilename,
                 }));
+            } else if (files.file) {
+                fileArray = [
+                    {
+                        filepath: files.file.filepath,
+                        originalFilename: files.file.originalFilename,
+                    },
+                ];
             }
 
             resolve({
@@ -57,18 +53,19 @@ const parseCSVFile = async (filePath: string): Promise<any[]> => {
         const records: any[] = [];
         const stream = fs.createReadStream(filePath);
 
+        // Use the csvParse function with .parse
         const parser = stream.pipe(csvParse.parse({ columns: true }));
 
         parser.on("data", (record: any) => {
-            records.push(record);
+            records.push(record);  // Collect records
         });
 
         parser.on("end", () => {
-            resolve(records);
+            resolve(records);  // Resolve once parsing is complete
         });
 
         parser.on("error", (error: any) => {
-            reject(error);
+            reject(error);  // Reject on error
         });
     });
 };
@@ -88,14 +85,19 @@ const parseExcelFile = async (filepath: string): Promise<any[]> => {
 
 const createOutputFile = (data: any[], outputDirectory: string, fileName: string): string => {
     try {
+        // Ensure the output directory exists
         if (!fs.existsSync(outputDirectory)) {
             fs.mkdirSync(outputDirectory, { recursive: true });
         }
 
         const outputFilePath = path.join(outputDirectory, fileName);
+
+        // Create the Excel file
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'ProcessedData');
+
+        // Write the file to disk
         XLSX.writeFile(workbook, outputFilePath);
 
         console.log(`Output file created: ${outputFilePath}`);
@@ -126,4 +128,4 @@ export default {
     parseExcelFile,
     deleteFile,
     createOutputFile
-};
+}
