@@ -121,6 +121,7 @@ const deleteFile = async (filePath: string): Promise<void> => {
         });
     });
 };
+
 export default {
     parseFormData,
     parseCSVFile,

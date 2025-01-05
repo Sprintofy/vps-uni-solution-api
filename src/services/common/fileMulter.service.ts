@@ -20,7 +20,6 @@ const storage = multer.diskStorage({
 });
 // Create multer upload middleware
 const upload = multer({ storage }).array('file', 10); // Allow up to 10 files
-
 // Middleware to handle form data and file upload
 const parseFormData = async (req: any): Promise<{ fields: any; files: { filepath: string; originalFilename: string }[] }> => {
     return new Promise((resolve, reject) => {
