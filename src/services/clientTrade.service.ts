@@ -5,6 +5,7 @@ import clientTradeModel from '../models/clinetTrade.model';
 import moment    from "moment";
 import * as path from 'path';
 import clientModel from "../models/client.model";
+import emailService from "./common/email.service";
 
 const import_trades = async (req: any) => {
     try {
@@ -144,7 +145,8 @@ const saveTrades = async(req:any,fields:any,data:any)=> {
         for (const client of data) {
               const client_trade_id = await saveClientTrade(req,fields,client) as any;
                 client.client_trade_id = client_trade_id.insertId;
-                await saveClientTradeBulkInfo(req,client,client.client_trades);
+                await sendPreTradeEmail(req,fields,client)
+                // await saveClientTradeBulkInfo(req,client,client.client_trades);
         }
     } catch (error) {
         console.error('Error processing bulk clients:', error);
@@ -205,6 +207,130 @@ const saveTradeFileLog = async(req:any,file:any,fields:any)=> {
     } as any;
     const results = await clientTradeModel.saveClientTradeFileLog(file_log);
     return {file_log_id:results.insertId}
+}
+
+const sendPreTradeEmail = async(req:any,fields:any,client:any)=> {
+    const emailSubject = `${client.client_code}_${moment().format('DD/MM/YYYY')}`;
+    let emailBody = `
+        <!DOCTYPE html>
+        <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Template</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+        .email-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .email-header {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .email-body {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .email-footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            Dear ${client.client_name},
+        </div>
+        <div class="email-body">
+            <p>We hope this email finds you well.</p>
+            <p>This is a reminder for your trade orders. Please find the details below:</p>
+            
+            <h3>Client Information:</h3>
+            <table>
+                <tr>
+                    <td><strong>Client Code:</strong></td>
+                    <td>${client.client_code}</td>
+                </tr>
+                <tr>
+                    <td><strong>Client Name:</strong></td>
+                    <td>${client.client_name}</td>
+                </tr>
+            </table>
+
+            <h3>Trade Orders:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Exchange Code</th>
+                        <th>Buy/Sell</th>
+                        <th>Product</th>
+                        <th>Script Name</th>
+                        <th>Quantity</th>
+                        <th>Order Type</th>
+                        <th>Price</th>
+                        <th>Trigger Price</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        client.client_trades.forEach((trade:any) => {
+        emailBody += `
+                    <tr>
+                        <td>${trade.exchange_code}</td>
+                        <td>${trade.buy_or_sell}</td>
+                        <td>${trade.product}</td>
+                        <td>${trade.script_name}</td>
+                        <td>${trade.quantity}</td>
+                        <td>${trade.order_type}</td>
+                        <td>${trade.price}</td>
+                        <td>${trade.trigger_price}</td>
+                    </tr>`;
+    });
+        emailBody += `
+                </tbody>
+            </table>
+
+            <p>For more details, please visit your trade portal.</p>
+        </div>
+        <div class="email-footer">
+            <p>Best Regards,</p>
+            <p>Your Company Name</p>
+        </div>
+    </div>
+</body>
+</html>
+`;
+
+    const mailOptions = {
+        from: 'pravinjagtap2151@gmail.com',
+        to: 'pravinjagtap84215@gmail.com',
+        subject:'Hi',
+        html: emailBody,
+    };
+    await emailService.sendEmail(mailOptions);
 }
 
 export default {
