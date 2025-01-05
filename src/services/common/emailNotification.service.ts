@@ -5,7 +5,9 @@ import moment from "moment/moment";
 import emailService from "./email.service";
 
 const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
+
     // todo fetch Email/template config From Organization wise
+
     const organizations_config = {
         from_email: 'pravinjagtap2151@gmail.com',
         email_subject:`${client.client_code}_${moment().format('DDMMYYYY')}`
