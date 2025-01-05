@@ -67,7 +67,8 @@ class rbacModel extends BaseModel {
         FROM rbac_user_page_permission ru
         LEFT JOIN rbac_pages rp ON rp.page_id = ru.page_id 
         WHERE ru.user_id = ?
-        AND ru.status = ? ;`;
+        AND ru.status = ?
+        ORDER BY rp.sequence ASC ;`;
         return await this._executeQuery(query, [user_id, status]);
     }
 
@@ -76,7 +77,6 @@ class rbacModel extends BaseModel {
         ruc.page_id,ruc.page_cta_id,rcp.cta_label, rcp.cta_path,rcp.is_default,ruc.status
         FROM rbac_user_cta_permission ruc
         LEFT JOIN rbac_page_cta rcp ON rcp.page_cta_id = ruc.page_cta_id
-        WHERE ruc.user_id= ? 
         AND ruc.status = ? ;`;
         return await this._executeQuery(query, [user_id, status]);
     }

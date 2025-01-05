@@ -114,7 +114,9 @@ const V1_fetchUserPageNCtaPermission = async (req: any): Promise<any> => {
 
         // Fetch page and CTA permissions
         const permissions = await rbacModel.fetchUserPagePermission(user[0].user_id, user[0].organization_id, CONSTANTS.STATUS.ACTIVE);
+        console.log(permissions)
         const cta_permissions = await rbacModel.fetchUserCtaPermission(user[0].user_id, user[0].organization_id, CONSTANTS.STATUS.ACTIVE);
+
 
         const menu: any[] = [];
         const lookup: any = {};

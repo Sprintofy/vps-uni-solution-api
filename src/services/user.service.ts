@@ -58,6 +58,7 @@ const loginWithEmail = async (req: any) => {
 
     // Fetch the user's page and CTA permissions
     const permissions = await rbacModel.fetchUserPagePermission(user[0].user_id, user[0].organization_id, CONSTANTS.STATUS.ACTIVE);
+
     const cta_permissions = await rbacModel.fetchUserCtaPermission(user[0].user_id, user[0].organization_id, CONSTANTS.STATUS.ACTIVE);
 
     const role_access: any = {};
