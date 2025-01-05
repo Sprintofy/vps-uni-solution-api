@@ -5,7 +5,7 @@ import clientTradeModel from '../models/clinetTrade.model';
 import moment    from "moment";
 import * as path from 'path';
 import clientModel from "../models/client.model";
-import emailService from "./common/email.service";
+import emailNotificationServiceService from "./common/emailNotification.service";
 
 const import_trades = async (req: any) => {
     try {
@@ -30,7 +30,6 @@ const import_trades = async (req: any) => {
                     console.warn("Unsupported file type:", file.originalFilename);
                     continue; // Skip unsupported files
                 }
-
                 // Process parsed data
                 await processData(req, file, fields, parsedData);
                 await fileService.deleteFile(file.filepath);
@@ -91,12 +90,17 @@ const mapAndTrimData = async (data: any[], keyMapping: Record<string, string>) =
 
 const processData = async (req: any, file: any, fields: any, data: any[]) => {
     try {
+
         const fileLogs = await saveTradeFileLog(req, file, fields);
-        fields.file_log_id= fileLogs.file_log_id ;
-        console.log(fields);
+
+        fields.file_log_id = fileLogs.file_log_id ;
+
         const mappedData = await mapAndTrimData(data,keyMapping);
-        await saveBulkClientTradeInfo(req, fields, mappedData);
-        return true;
+
+        const status = await saveBulkClientTradeInfo(req, fields, mappedData);
+
+        return status;
+
     } catch (error: any) {
         console.error("Error processing data:", error.message);
         throw error;
@@ -105,6 +109,7 @@ const processData = async (req: any, file: any, fields: any, data: any[]) => {
 
 const saveBulkClientTradeInfo = async(req:any,fields:any,data:any)=> {
     try {
+
         const uniqueClientId = [...new Set(data.map((item:any) => item.client_code))];
 
         const clients = await clientModel.fetchClientInfoByIds(uniqueClientId,fields.organization_id);
@@ -127,12 +132,14 @@ const saveBulkClientTradeInfo = async(req:any,fields:any,data:any)=> {
         });
 
         const not_match_record = status_updated.filter((trade:any) => trade.status == 0);
+
         // if (not_match_record.length){
         //      throw new Error('Some Trade not Match with Client Code');
         // }
+
         await saveTrades(req, fields, client_trades);
 
-        return true;
+        return status_updated;
 
     } catch (error) {
         console.error('Error processing bulk  Trade:', error);
@@ -142,12 +149,21 @@ const saveBulkClientTradeInfo = async(req:any,fields:any,data:any)=> {
 
 const saveTrades = async(req:any,fields:any,data:any)=> {
     try {
+
         for (const client of data) {
-              const client_trade_id = await saveClientTrade(req,fields,client) as any;
-                client.client_trade_id = client_trade_id.insertId;
-                await sendPreTradeEmail(req,fields,client)
-                // await saveClientTradeBulkInfo(req,client,client.client_trades);
+
+            // save client trade info
+            const client_trade_id = await saveClientTrade(req,fields,client) as any;
+
+            client.client_trade_id = client_trade_id.insertId;
+
+            // save the client pre-trade information
+            //await saveClientTradeBulkInfo(req,client,client.client_trades);
+
+            // send the client pre-trade notification
+            //emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(fields.organization_id,client)
         }
+
     } catch (error) {
         console.error('Error processing bulk clients:', error);
         throw new Error('Error processing bulk client information');
@@ -156,9 +172,33 @@ const saveTrades = async(req:any,fields:any,data:any)=> {
 
 const saveClientTradeBulkInfo = async(req:any,client:any,trades:any)=> {
     for (const trade of trades) {
-         trade.client_trade_id = client.client_trade_id
-         await saveClientTradeInfo(req,client,trade) as any;;
+
+         trade.client_trade_id = client.client_trade_id;
+
+         await saveClientTradeInfo(req,client,trade) as any;
     }
+}
+
+
+/*************** MYSQL CURD Operation *************/
+
+const saveClientTrade = async(req:any,fields:any,body:any)=> {
+
+    let client_trade = {
+        organization_id: body.organization_id,
+        client_id: body.client_id,
+        client_code: body.client_code,
+        file_log_id: fields.file_log_id,
+
+        //is_email_sent: body.is_email_sent !== undefined && body.is_email_sent !== null ? body.is_email_sent : 0,
+        //is_email_recieved: body.is_email_recieved !== undefined && body.is_email_recieved !== null ? body.is_email_recieved : 0,
+        //email_proof: body.email_proof !== undefined && body.email_proof !== null && body.email_proof !== "" ? body.email_proof : null,
+        //status: body.status !== undefined && body.status !== null ? body.status : 1,
+        //created_by: req.user.user_id !== undefined && req.user.user_id  !== null ? req.user.user_id  : 0,
+        //updated_by: req.user.user_id  !== undefined &&req.user.user_id  !== null ? req.user.user_id  : 0
+    };
+
+    return await clientTradeModel.saveClientTrade(client_trade);
 }
 
 const saveClientTradeInfo = async(req:any,fields:any,body:any)=> {
@@ -183,22 +223,6 @@ const saveClientTradeInfo = async(req:any,fields:any,body:any)=> {
     return await clientTradeModel.saveClientTradeInfo(client_trade_info);
 }
 
-const saveClientTrade = async(req:any,fields:any,body:any)=> {
-    let client_trade = {
-        organization_id: body.organization_id,
-        client_id: body.client_id,
-        client_code: body.client_code,
-        file_log_id: fields.file_log_id,
-        //is_email_sent: body.is_email_sent !== undefined && body.is_email_sent !== null ? body.is_email_sent : 0,
-        //is_email_recieved: body.is_email_recieved !== undefined && body.is_email_recieved !== null ? body.is_email_recieved : 0,
-        //email_proof: body.email_proof !== undefined && body.email_proof !== null && body.email_proof !== "" ? body.email_proof : null,
-        //status: body.status !== undefined && body.status !== null ? body.status : 1,
-        //created_by: req.user.user_id !== undefined && req.user.user_id  !== null ? req.user.user_id  : 0,
-        //updated_by: req.user.user_id  !== undefined &&req.user.user_id  !== null ? req.user.user_id  : 0
-    };
-    return await clientTradeModel.saveClientTrade(client_trade);
-}
-
 const saveTradeFileLog = async(req:any,file:any,fields:any)=> {
     let file_log = {
         created_by:1,
@@ -209,128 +233,14 @@ const saveTradeFileLog = async(req:any,file:any,fields:any)=> {
     return {file_log_id:results.insertId}
 }
 
-const sendPreTradeEmail = async(req:any,fields:any,client:any)=> {
-    const emailSubject = `${client.client_code}_${moment().format('DD/MM/YYYY')}`;
-    let emailBody = `
-        <!DOCTYPE html>
-        <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Template</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
-        }
-        .email-container {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .email-header {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        .email-body {
-            font-size: 16px;
-            line-height: 1.5;
-        }
-        .email-footer {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #888;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        table th, table td {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-        table th {
-            background-color: #f4f4f4;
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="email-header">
-            Dear ${client.client_name},
-        </div>
-        <div class="email-body">
-            <p>We hope this email finds you well.</p>
-            <p>This is a reminder for your trade orders. Please find the details below:</p>
-            
-            <h3>Client Information:</h3>
-            <table>
-                <tr>
-                    <td><strong>Client Code:</strong></td>
-                    <td>${client.client_code}</td>
-                </tr>
-                <tr>
-                    <td><strong>Client Name:</strong></td>
-                    <td>${client.client_name}</td>
-                </tr>
-            </table>
-
-            <h3>Trade Orders:</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Exchange Code</th>
-                        <th>Buy/Sell</th>
-                        <th>Product</th>
-                        <th>Script Name</th>
-                        <th>Quantity</th>
-                        <th>Order Type</th>
-                        <th>Price</th>
-                        <th>Trigger Price</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-        client.client_trades.forEach((trade:any) => {
-        emailBody += `
-                    <tr>
-                        <td>${trade.exchange_code}</td>
-                        <td>${trade.buy_or_sell}</td>
-                        <td>${trade.product}</td>
-                        <td>${trade.script_name}</td>
-                        <td>${trade.quantity}</td>
-                        <td>${trade.order_type}</td>
-                        <td>${trade.price}</td>
-                        <td>${trade.trigger_price}</td>
-                    </tr>`;
-    });
-        emailBody += `
-                </tbody>
-            </table>
-
-            <p>For more details, please visit your trade portal.</p>
-        </div>
-        <div class="email-footer">
-            <p>Best Regards,</p>
-            <p>Your Company Name</p>
-        </div>
-    </div>
-</body>
-</html>
-`;
-
-    const mailOptions = {
-        from: 'pravinjagtap2151@gmail.com',
-        to: 'pravinjagtap84215@gmail.com',
-        subject:'Hi',
-        html: emailBody,
-    };
-    await emailService.sendEmail(mailOptions);
+const updateTradeFileLog = async(req:any,file:any,fields:any)=> {
+    let file_log = {
+        created_by:1,
+        organization_id:1,
+        original_file_name:file.originalFilename,
+    } as any;
+    const results = await clientTradeModel.saveClientTradeFileLog(file_log);
+    return {file_log_id:results.insertId}
 }
 
 export default {
