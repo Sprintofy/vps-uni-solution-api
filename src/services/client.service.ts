@@ -8,16 +8,12 @@ import * as path from 'path';
 const import_clients = async (req: any) => {
     try {
         const { fields, files } = await fileService.parseFormData(req) as any;
-
         if (!files || files.length === 0) {
             console.warn("No files uploaded.");
             return;
         }
-
         for (const file of files) {
-            console.log("Processing file:", file.originalFilename);
             let parsedData: any[] = [];
-
             try {
                 // Parse the file based on its extension
                 if (file.originalFilename.endsWith(".csv")) {
@@ -28,7 +24,6 @@ const import_clients = async (req: any) => {
                     console.warn("Unsupported file type:", file.originalFilename);
                     continue; // Skip unsupported files
                 }
-
                 // Process parsed data
                 await processData(req, file, fields, parsedData);
                 await fileService.deleteFile(file.filepath);
@@ -129,20 +124,11 @@ const processData = async (req: any, file: any, fields: any, data: any[]) => {
     try {
 
             await saveFileLog(req, file, fields);
+
             // Perform additional processing here (e.g., validation, status addition, etc.)
             const mappedData = await mapAndTrimData(data,keyMapping);
 
             await saveBulkClientInfo(req, fields, mappedData);
-
-            // Define output file name
-            // const outputFileName = `output_${Date.now()}.xlsx`;
-            // const outputFilePath = path.join(__dirname, '..', 'output', outputFileName);
-
-            // Convert processed data to an Excel file
-            // console.log(`Excel file created at: ${outputFilePath}`);
-
-            // todo Optionally, upload the file to an S3 bucket
-            // const s3UploadPath = `processed/${outputFileName}`;
 
             // todo delete the local file after uploading s3
 
@@ -157,21 +143,23 @@ const saveBulkClientInfo = async(req:any,fields:any,data:any)=> {
     try {
         // Process each client in parallel (1 - Create Client, 2 - Create Client Profile)
         const clientPromises = data.map((client: any) => {
+
             return saveClient(req,fields,client).then((clientInfo:any) => {
-                console.log(client);
-                // Extract client_id from the inserted data (assuming insertId is the client ID)
                 client.client_id = clientInfo.insertId;
                 client.organization_id = fields.organization_id;
+
                 // Use client ID to create profile and address concurrently
                 return Promise.all([
                     saveClientAddress(req,client),  // Pass clientInfo to save the address
                     saveClientProfile(req,client)   // Pass clientInfo to save the profile
                 ]);
+
             });
         });
 
         // Wait for all client creation processes to finish
         const result = await Promise.all(clientPromises);
+
         // Wait for all client creation processes to finish
         return { success: true, message: 'Clients processed successfully', data: result };
 
@@ -181,23 +169,22 @@ const saveBulkClientInfo = async(req:any,fields:any,data:any)=> {
     }
 }
 
-const saveClientInfo = async(req:any,body:any)=> {
-    let client_info = {} as any;
-    return await clientModel.saveClient(client_info);
-}
 
 const saveClient= async(req:any,fields:any,body:any)=> {
+
     let client_info = {
         organization_id:fields.organization_id,
     } as any;
+
     if (body.client_code !== undefined && body.client_code !== null && body.client_code !== "")client_info.client_code = body.client_code;
     if (body.client_name !== undefined && body.client_name !== null && body.client_name !== "")client_info.client_name = body.client_name;
     if (body.mobile !== undefined && body.mobile !== null && body.mobile !== "")client_info.mobile = body.mobile;
     if (body.email !== undefined && body.email !== null && body.email !== "")client_info.email = body.email;
+
     //if (body.branch_code !== undefined && body.branch_code !== null && body.branch_code !== "")client_info.branch_code = body.branch_code;
     //if (body.sub_broker_code !== undefined && body.sub_broker_code !== null && body.sub_broker_code !== "") client_info.sub_broker_code = body.sub_broker_code;
     //if (body.dealer_code !== undefined && body.dealer_code !== null && body.dealer_code !== "")client_info.dealer_code = body.dealer_code;
-    console.log("saveClient",client_info);
+
     return await clientModel.saveClient(client_info);
 }
 
@@ -207,19 +194,21 @@ const saveClientProfile= async(req:any,body:any)=> {
             client_id:body.client_id,
             organization_id:body.organization_id,
         } as any;
+
         if (body.pan_number !== undefined && body.pan_number !== null && body.pan_number !== "") client_profile.pan_number = body.pan_number;
         if (body.bank_name !== undefined && body.bank_name !== null && body.bank_name !== "") client_profile.bank_name = body.bank_name;
         if (body.bank_account_number !== undefined && body.bank_account_number !== null && body.bank_account_number !== "") client_profile.bank_account_number = body.bank_account_number;
         if (body.bank_ifsc_code !== undefined && body.bank_ifsc_code !== null && body.bank_ifsc_code !== "") client_profile.bank_ifsc_code = body.bank_ifsc_code;
+
         // if (body.date_of_birth !== undefined && body.date_of_birth !== null && body.date_of_birth !== "")client_profile.date_of_birth = body.date_of_birth;
         // if (body.default_dp !== undefined && body.default_dp !== null && body.default_dp !== "") client_profile.default_dp = body.default_dp;
+
         return await clientModel.saveClientProfile(client_profile);
+
     } catch (error: any) {
         console.error(`Failed to save client profile: ${error.message}`);
         throw error;
     }
-
-
 }
 
 const saveClientAddress= async(req:any,body:any)=> {
@@ -228,9 +217,11 @@ const saveClientAddress= async(req:any,body:any)=> {
             client_id:body.client_id,
             organization_id:body.organization_id,
         } as any;
+
         if (body.address_1 !== undefined && body.address_1 !== null && body.address_1 !== "")client_address.address_1 = body.address_1;
-        console.log("client_address",client_address);
+
         return await clientModel.saveClientAddress(client_address);
+
     } catch (error:any) {
         console.error(`Failed to save client address: ${error.message}`);
         throw error;
