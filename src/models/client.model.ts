@@ -5,6 +5,12 @@ class ClientModel extends BaseModel {
     constructor() {
         super();
     }
+    async fetchClientInfoByIds(ids: any,organization_id:number) {
+        const query = `SELECT * FROM clients 
+        WHERE client_code IN (?)
+        AND organization_id = ?;`;
+        return await this._executeQuery(query, [ids,organization_id]);
+    }
 
     async saveClientFileLog(data: any) {
         const query = `INSERT INTO client_files SET ? ;`;
