@@ -5,6 +5,32 @@ class ClientModel extends BaseModel {
     constructor() {
         super();
     }
+
+    async fetchAllClients(organization_id:number,searchText:any,limit:any,offset:any,sort:any) {
+        let parameters=[];
+        parameters.push(organization_id)
+        let query =`SELECT client_id,client_code,client_name,email,mobile,status 
+         FROM clients
+         WHERE organization_id = ? `
+        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND client_name LIKE ? ", parameters.push('%' + searchText + '%')):""
+        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
+
+        query += " LIMIT ? OFFSET ? ;";
+
+        parameters.push(limit, offset);
+
+        return await this._executeQuery(query, parameters)
+    }
+
+    async fetchAllClientsCount(organization_id:number ,searchText:any) {
+        let parameters=[]
+        parameters.push(organization_id);
+        let query = `SELECT COUNT(client_id) as total FROM clients
+         WHERE organization_id = ? `;
+        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + searchText + '%')):""
+        return await this._executeQuery(query, parameters)
+    }
+
     async fetchClientInfoByIds(ids: any,organization_id:number) {
         const query = `SELECT * FROM clients 
         WHERE client_code IN (?)

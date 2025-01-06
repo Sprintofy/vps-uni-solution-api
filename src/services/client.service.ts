@@ -5,6 +5,21 @@ import clientModel from '../models/client.model';
 import moment    from "moment";
 import * as path from 'path';
 
+
+const fetch_all_clients = async (req: any) => {
+    try {
+        const clients = await clientModel.fetchAllClients(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await clientModel.fetchAllClientsCount(1,req.body.query || "");
+        return {
+            data:clients,
+            total:total[0].total
+        }
+    } catch (error: any) {
+        console.error("Error importing clients:", error.message);
+        throw new Error(`Error: ${error.message}`);
+    }
+};
+
 const import_clients = async (req: any) => {
     try {
         const { fields, files } = await fileService.parseFormData(req) as any;
@@ -169,7 +184,6 @@ const saveBulkClientInfo = async(req:any,fields:any,data:any)=> {
     }
 }
 
-
 const saveClient= async(req:any,fields:any,body:any)=> {
 
     let client_info = {
@@ -239,5 +253,6 @@ const saveFileLog = async(req:any,file:any,fields:any)=> {
 }
 
 export default {
+    fetch_all_clients:fetch_all_clients,
     import_clients: import_clients
 }

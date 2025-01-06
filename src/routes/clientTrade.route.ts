@@ -7,5 +7,6 @@ import clientTradeController from "../controllers/clientTrade.controller";
 
 router.post('/import-trades', clientTradeController.import_trades);
 
+router.post('/fetch-all', clientTradeController.fetch_all_clients_trades);
 
 export default router;

@@ -7,4 +7,6 @@ import clientController from "../controllers/client.controller";
 
 router.post('/import-clients', clientController.import_clients);
 
+router.post('/fetch-all', clientController.fetch_all_clients);
+
 export default router;

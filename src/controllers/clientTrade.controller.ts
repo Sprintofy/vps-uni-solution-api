@@ -18,7 +18,21 @@ const import_trades: IController = async (req: any, res: any) => {
         }
     }
 }
+const fetch_all_clients_trades: IController = async (req: any, res: any) => {
+    try {
+        let result = await clientTradeService.fetch_all_clients_trades(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, result)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
+
 
 export default {
-    import_trades: import_trades
+    import_trades: import_trades,
+    fetch_all_clients_trades: fetch_all_clients_trades
 }

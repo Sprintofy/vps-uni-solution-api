@@ -1,11 +1,23 @@
 'use strict';
 import CONSTANTS from '../common/constants/constants';
-import fileService from './common/file.service';
 import clientTradeModel from '../models/clinetTrade.model';
-import moment    from "moment";
-import * as path from 'path';
 import clientModel from "../models/client.model";
+import fileService from './common/file.service';
 import emailNotificationServiceService from "./common/emailNotification.service";
+
+const fetch_all_clients_trades = async (req: any) => {
+    try {
+        const clients = await clientTradeModel.fetchAllClientsTrades(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await clientTradeModel.fetchAllClientsTradesCount(1,req.body.query || "");
+        return {
+            data:clients,
+            total:total[0].total
+        }
+    } catch (error: any) {
+        console.error("Error importing clients:", error.message);
+        throw new Error(`Error: ${error.message}`);
+    }
+}
 
 const import_trades = async (req: any) => {
     try {
@@ -244,5 +256,6 @@ const updateTradeFileLog = async(req:any,file:any,fields:any)=> {
 }
 
 export default {
-    import_trades: import_trades
+    import_trades: import_trades,
+    fetch_all_clients_trades:fetch_all_clients_trades
 }
