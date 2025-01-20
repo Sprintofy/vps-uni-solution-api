@@ -3,12 +3,12 @@ import httpStatusCodes from 'http-status-codes';
 import apiResponse from '../appConfigs/utilities/apiResponse';
 import IController from '../appConfigs/utilities/IController';
 import MESSAGES from '../common/messages/messages';
-import clientService from '../services/client.service';
+import clientTradeService from '../services/preTrade.service';
 const LOGGER = new (require('../appConfigs/utilities/logger').default)('roleController.ts');
 
-const import_clients: IController = async (req: any, res: any) => {
+const import_trades: IController = async (req: any, res: any) => {
     try {
-        let result = await clientService.import_clients(req);
+        let result = await clientTradeService.import_trades(req);
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, result)
     } catch (error: any) {
         if (error instanceof Error) {
@@ -19,10 +19,10 @@ const import_clients: IController = async (req: any, res: any) => {
     }
 }
 
-const fetch_all_clients_with_pagination: IController = async (req: any, res: any) => {
+const fetch_all_clients_trades: IController = async (req: any, res: any) => {
     try {
-        let results = await clientService.fetch_all_clients_with_pagination(req);
-        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+        let result = await clientTradeService.fetch_all_clients_trades(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, result)
     } catch (error: any) {
         if (error instanceof Error) {
             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
@@ -31,23 +31,9 @@ const fetch_all_clients_with_pagination: IController = async (req: any, res: any
         }
     }
 }
-
-const fetch_all_clients: IController = async (req: any, res: any) => {
+const fetch_all_clients_trades_logs: IController = async (req: any, res: any) => {
     try {
-        let results = await clientService.fetch_all_clients(req);
-        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
-    } catch (error: any) {
-        if (error instanceof Error) {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
-        } else {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
-        }
-    }
-}
-
-const save_client_info: IController = async (req: any, res: any) => {
-    try {
-        let result = await clientService.save_client_info(req);
+        let result = await clientTradeService.fetch_all_clients_trades_logs(req);
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, result)
     } catch (error: any) {
         if (error instanceof Error) {
@@ -58,23 +44,37 @@ const save_client_info: IController = async (req: any, res: any) => {
     }
 }
 
-
-const fetch_all_cities: IController = async (req: any, res: any) => {
+const fetch_trades_details_by_client_id: IController = async (req: any, res: any) => {
     try {
-        // let results = await clientService.fetch_all_cites(req);
-        const results = [
-            { label: "Mumbai", value: "Mumbai", city_id: 1 },
-            { label: "Pune", value: "Pune", city_id: 2 },
-            { label: "Nagpur", value: "Nagpur", city_id: 3 },
-            { label: "Thane", value: "Thane", city_id: 4 },
-            { label: "Nashik", value: "Nashik", city_id: 5 },
-            { label: "Aurangabad", value: "Aurangabad", city_id: 6 },
-            { label: "Solapur", value: "Solapur", city_id: 7 },
-            { label: "Kolhapur", value: "Kolhapur", city_id: 8 },
-            { label: "Amravati", value: "Amravati", city_id: 9 }
-        ]
+         let results = await clientTradeService.fetch_trades_details_by_client_id(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
 
+const save_trades_by_client: IController = async (req: any, res: any) => {
+    try {
+         let results = await clientTradeService.save_trades_by_client(req);
+         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
 
+const download_all_pdf: IController = async (req: any, res: any) => {
+    try {
+         const results = {
+             file_url:"https://api.humpyfarms.com/images/city/1710439273.png"
+         }
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
     } catch (error: any) {
         if (error instanceof Error) {
@@ -86,9 +86,10 @@ const fetch_all_cities: IController = async (req: any, res: any) => {
 }
 
 export default {
-    import_clients: import_clients,
-    fetch_all_clients: fetch_all_clients,
-    fetch_all_clients_with_pagination:fetch_all_clients_with_pagination,
-    save_client_info:save_client_info,
-    fetch_all_cities:fetch_all_cities
+    import_trades: import_trades,
+    fetch_all_clients_trades: fetch_all_clients_trades,
+    fetch_trades_details_by_client_id: fetch_trades_details_by_client_id,
+    save_trades_by_client:save_trades_by_client,
+    download_all_pdf:download_all_pdf,
+    fetch_all_clients_trades_logs:fetch_all_clients_trades_logs
 }

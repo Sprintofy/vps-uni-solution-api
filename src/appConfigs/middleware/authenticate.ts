@@ -19,7 +19,7 @@ import url from 'url';
  *
  */
 const authorizationIgnorePath: string[] = application.authorizationIgnorePath;
-let isByPassCheck: boolean = true; // Assuming this flag will be controlled from somewhere in your application
+let isByPassCheck: boolean = false; // Assuming this flag will be controlled from somewhere in your application
 
 const authenticateMiddleware = async (
     req: express.Request,

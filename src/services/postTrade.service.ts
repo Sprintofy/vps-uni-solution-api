@@ -1,14 +1,14 @@
 'use strict';
 import CONSTANTS from '../common/constants/constants';
-import clientTradeModel from '../models/clinetTrade.model';
+import instructionOrderModel from '../models/postTrade.model';
 import clientModel from "../models/client.model";
 import fileService from './common/file.service';
-import emailNotificationServiceService from "./common/emailNotification.service";
+import emailNotificationServiceService from "./common/notification.service";
 
 const fetch_all_clients_trades = async (req: any) => {
     try {
-        const clients = await clientTradeModel.fetchAllClientsTrades(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await clientTradeModel.fetchAllClientsTradesCount(1,req.body.query || "");
+        const clients = await instructionOrderModel.fetchAllClientsTrades(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await instructionOrderModel.fetchAllClientsTradesCount(1,req.body.query || "");
         return {
             data:clients,
             total:total[0].total
@@ -19,7 +19,7 @@ const fetch_all_clients_trades = async (req: any) => {
     }
 }
 
-const import_trades = async (req: any) => {
+const import_instruction_order = async (req: any) => {
     try {
         const { fields, files } = await fileService.parseFormData(req) as any;
 
@@ -33,7 +33,8 @@ const import_trades = async (req: any) => {
             let parsedData: any[] = [];
 
             try {
-                // Parse the file based on its extension
+                // Parse the file based on its extension.
+
                 if (file.originalFilename.endsWith(".csv")) {
                     parsedData = await fileService.parseCSVFile(file.filepath);
                 } else if (file.originalFilename.endsWith(".xlsx") || file.originalFilename.endsWith(".xls")) {
@@ -42,13 +43,16 @@ const import_trades = async (req: any) => {
                     console.warn("Unsupported file type:", file.originalFilename);
                     continue; // Skip unsupported files
                 }
-                // Process parsed data
+
+                // Process parsed data...
+
                 await processData(req, file, fields, parsedData);
                 await fileService.deleteFile(file.filepath);
+
             } catch (error: any) {
                 console.error(`Error processing file ${file.originalFilename}:`, error.message);
                 await fileService.deleteFile(file.filepath);
-                throw error
+                throw error;
             }
         }
     } catch (error: any) {
@@ -105,11 +109,12 @@ const processData = async (req: any, file: any, fields: any, data: any[]) => {
 
         const fileLogs = await saveTradeFileLog(req, file, fields);
 
-        fields.file_log_id = fileLogs.file_log_id ;
+        fields.pre_tades_file_id = fileLogs.pre_tades_file_id ;
+        console.log(fields);
 
         const mappedData = await mapAndTrimData(data,keyMapping);
 
-        const status = await saveBulkClientTradeInfo(req, fields, mappedData);
+       const status = await saveBulkClientTradeInfo(req, fields, mappedData);
 
         return status;
 
@@ -123,35 +128,66 @@ const saveBulkClientTradeInfo = async(req:any,fields:any,data:any)=> {
     try {
 
         const uniqueClientId = [...new Set(data.map((item:any) => item.client_code))];
+        // console.log("data",data);
 
         const clients = await clientModel.fetchClientInfoByIds(uniqueClientId,fields.organization_id);
+        //console.log("clients",clients);
+
+        // Merge data with client information
+        const trade_info = data.map((order:any) => {
+            const client = clients.find((client:any) => client.client_code === order.client_code);
+            if (client) {
+                return {
+                    ...order,
+                    pre_tades_file_id:fields.pre_tades_file_id,
+                    client_info:client,
+                    client_id:client.client_id,
+                    client_name: client.client_name,
+                    email: client.email,
+                    mobile: client.mobile,
+                    organization_id:client.organization_id,
+                    status:1,
+                    comment:'Record Saved.'
+                };
+            } else {
+                return {
+                    ...order,
+                    status:0,
+                    comment:'Client Code is not Found.'
+                };
+            }
+        });
+
 
         const client_trades = clients.map((client:any) => {
             const trades = data.filter((trade:any) => trade.client_code === client.client_code);
             return {
                 ...client,
-                client_trades: trades, // Adding the trades array for this client
-            };
-        });
-
-        const status_updated = data.map((trade:any) => {
-            const trades = clients.filter((client:any) => trade.client_code === client.client_code);
-            return {
-                ...trade,
+                pre_tades_file_id:fields.pre_tades_file_id,
+                client_trades: trades,
                 status: trades.length ? 1 :0,
-                comment: trades.length ? 'Record Inserted' :'Client Code not match.' // Adding the trades array for this client
+                comment: trades.length ? 'Record Saved.' :'Client Code is not Found.' // Adding the trades array for this client// Adding the trades array for this client
             };
         });
 
-        const not_match_record = status_updated.filter((trade:any) => trade.status == 0);
+        // const status_updated = data.map((trade:any) => {
+        //     const trades = clients.filter((client:any) => trade.client_code === client.client_code);
+        //     return {
+        //         ...trade,
+        //         status: trades.length ? 1 :0,
+        //         comment: trades.length ? 'Record Inserted' :'Client Code not match.' // Adding the trades array for this client
+        //     };
+        // });
+
+       // const not_match_record = status_updated.filter((trade:any) => trade.status == 0);
 
         // if (not_match_record.length){
         //      throw new Error('Some Trade not Match with Client Code');
         // }
+        emailNotificationServiceService.readPreTradeEmailToClientOrganizationWise(fields.organization_id,null)
+        // await saveTrades(req, fields,trade_info, client_trades);
 
-        await saveTrades(req, fields, client_trades);
-
-        return status_updated;
+        return true;
 
     } catch (error) {
         console.error('Error processing bulk  Trade:', error);
@@ -159,10 +195,10 @@ const saveBulkClientTradeInfo = async(req:any,fields:any,data:any)=> {
     }
 }
 
-const saveTrades = async(req:any,fields:any,data:any)=> {
+const saveTrades = async(req:any,fields:any,trade_info:any,client_wise_trade:any)=> {
     try {
-
-        for (const client of data) {
+         // todo fetch organization details
+        for (const client of client_wise_trade) {
 
             // save client trade info
             const client_trade_id = await saveClientTrade(req,fields,client) as any;
@@ -170,10 +206,11 @@ const saveTrades = async(req:any,fields:any,data:any)=> {
             client.client_trade_id = client_trade_id.insertId;
 
             // save the client pre-trade information
-            //await saveClientTradeBulkInfo(req,client,client.client_trades);
+            await saveClientTradeBulkInfo(req,client,client.client_trades);
+
 
             // send the client pre-trade notification
-            //emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(fields.organization_id,client)
+            // emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(fields.organization_id,client)
         }
 
     } catch (error) {
@@ -184,10 +221,8 @@ const saveTrades = async(req:any,fields:any,data:any)=> {
 
 const saveClientTradeBulkInfo = async(req:any,client:any,trades:any)=> {
     for (const trade of trades) {
-
-         trade.client_trade_id = client.client_trade_id;
-
-         await saveClientTradeInfo(req,client,trade) as any;
+        trade.client_trade_id = client.client_trade_id;
+        await saveClientTradeInfo(req,client,trade) as any;
     }
 }
 
@@ -200,23 +235,23 @@ const saveClientTrade = async(req:any,fields:any,body:any)=> {
         organization_id: body.organization_id,
         client_id: body.client_id,
         client_code: body.client_code,
-        file_log_id: fields.file_log_id,
-
+        pre_tades_file_id: fields.pre_tades_file_id,
         //is_email_sent: body.is_email_sent !== undefined && body.is_email_sent !== null ? body.is_email_sent : 0,
-        //is_email_recieved: body.is_email_recieved !== undefined && body.is_email_recieved !== null ? body.is_email_recieved : 0,
+        //is_email_received: body.is_email_received !== undefined && body.is_email_received !== null ? body.is_email_received : 0,
         //email_proof: body.email_proof !== undefined && body.email_proof !== null && body.email_proof !== "" ? body.email_proof : null,
         //status: body.status !== undefined && body.status !== null ? body.status : 1,
         //created_by: req.user.user_id !== undefined && req.user.user_id  !== null ? req.user.user_id  : 0,
         //updated_by: req.user.user_id  !== undefined &&req.user.user_id  !== null ? req.user.user_id  : 0
     };
 
-    return await clientTradeModel.saveClientTrade(client_trade);
+    return await instructionOrderModel.saveClientTrade(client_trade);
 }
 
 const saveClientTradeInfo = async(req:any,fields:any,body:any)=> {
     const client_trade_info = {
         organization_id:fields.organization_id,
-        client_trade_id:fields.client_trade_id,
+        client_trade_id: fields.client_trade_id,
+        pre_tades_file_id: fields.pre_tades_file_id,
         client_id:fields.client_id,
     } as any;
     if (body.client_code !== undefined && body.client_code !== null && body.client_code !== "") client_trade_info.client_code = body.client_code;
@@ -232,17 +267,18 @@ const saveClientTradeInfo = async(req:any,fields:any,body:any)=> {
     if (body.trigger_price !== undefined && body.trigger_price !== null && body.trigger_price !== "")client_trade_info.trigger_price = body.trigger_price;
     if (body.order_life !== undefined && body.order_life !== null && body.order_life !== "")client_trade_info.order_life = body.order_life;
     if (body.gtd_value !== undefined && body.gtd_value !== null && body.gtd_value !== "")client_trade_info.gtd_value = body.gtd_value;
-    return await clientTradeModel.saveClientTradeInfo(client_trade_info);
+    console.log(client_trade_info);
+    return await instructionOrderModel.saveClientTradeInfo(client_trade_info);
 }
 
 const saveTradeFileLog = async(req:any,file:any,fields:any)=> {
     let file_log = {
-        created_by:1,
-        organization_id:1,
+        created_by: 1,
+        organization_id: 1,
         original_file_name:file.originalFilename,
     } as any;
-    const results = await clientTradeModel.saveClientTradeFileLog(file_log);
-    return {file_log_id:results.insertId}
+    const results = await instructionOrderModel.save_instruction_order_files(file_log);
+    return { pre_tades_file_id: results.insertId }
 }
 
 const updateTradeFileLog = async(req:any,file:any,fields:any)=> {
@@ -251,11 +287,11 @@ const updateTradeFileLog = async(req:any,file:any,fields:any)=> {
         organization_id:1,
         original_file_name:file.originalFilename,
     } as any;
-    const results = await clientTradeModel.saveClientTradeFileLog(file_log);
+    const results = await instructionOrderModel.save_instruction_order_files(file_log);
     return {file_log_id:results.insertId}
 }
 
 export default {
-    import_trades: import_trades,
+    import_instruction_order: import_instruction_order,
     fetch_all_clients_trades:fetch_all_clients_trades
 }

@@ -1,6 +1,11 @@
 'use strict';
 
 export default {
+    AWS:{
+        S3_BUCKET:{
+            FOLDER_NAME: "organization_"
+        },
+    },
 
     STATUS: {
         IN_ACTIVE: 0,

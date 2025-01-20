@@ -4,16 +4,27 @@ import fileService from './common/file.service';
 import clientModel from '../models/client.model';
 import moment    from "moment";
 import * as path from 'path';
+import {error} from "winston";
 
 
-const fetch_all_clients = async (req: any) => {
+const fetch_all_clients_with_pagination = async (req: any) => {
     try {
-        const clients = await clientModel.fetchAllClients(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await clientModel.fetchAllClientsCount(1,req.body.query || "");
+        const clients = await clientModel.fetch_all_clients_with_pagination(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await clientModel.fetch_all_clients_count(1,req.body.query || "");
         return {
             data:clients,
             total:total[0].total
         }
+    } catch (error: any) {
+        console.error("Error importing clients:", error.message);
+        throw new Error(`Error: ${error.message}`);
+    }
+};
+
+const fetch_all_clients = async (req: any) => {
+    try {
+        const clients = await clientModel.fetch_all_clients(1);
+        return clients
     } catch (error: any) {
         console.error("Error importing clients:", error.message);
         throw new Error(`Error: ${error.message}`);
@@ -158,11 +169,9 @@ const saveBulkClientInfo = async(req:any,fields:any,data:any)=> {
     try {
         // Process each client in parallel (1 - Create Client, 2 - Create Client Profile)
         const clientPromises = data.map((client: any) => {
-
             return saveClient(req,fields,client).then((clientInfo:any) => {
                 client.client_id = clientInfo.insertId;
                 client.organization_id = fields.organization_id;
-
                 // Use client ID to create profile and address concurrently
                 return Promise.all([
                     saveClientAddress(req,client),  // Pass clientInfo to save the address
@@ -184,21 +193,43 @@ const saveBulkClientInfo = async(req:any,fields:any,data:any)=> {
     }
 }
 
+const save_client_info = async(req:any)=> {
+    try {
+        console.log(req)
+        const results = await saveClient(req,null,req.body);
+
+        if(!results) throw  error("Error Saving client info");
+
+        req.body.client_id = results.insertId;
+
+        const [addressResult, profileResult] = await Promise.all([
+            saveClientAddress(req, req.body),
+            saveClientProfile(req, req.body)
+        ]);
+
+        return req.body;
+    } catch (error) {
+        console.error('Error processing bulk clients:', error);
+        throw new Error('Error processing bulk client information');
+    }
+}
+
+/************* Mysql Curd Service ************/
+
 const saveClient= async(req:any,fields:any,body:any)=> {
-
     let client_info = {
-        organization_id:fields.organization_id,
+        organization_id: req.user.organization_id || 1,
+        created_by: req.user.created_by || 0,
+        updated_by: req.user.updated_by || 0,
     } as any;
-
     if (body.client_code !== undefined && body.client_code !== null && body.client_code !== "")client_info.client_code = body.client_code;
     if (body.client_name !== undefined && body.client_name !== null && body.client_name !== "")client_info.client_name = body.client_name;
     if (body.mobile !== undefined && body.mobile !== null && body.mobile !== "")client_info.mobile = body.mobile;
     if (body.email !== undefined && body.email !== null && body.email !== "")client_info.email = body.email;
-
-    //if (body.branch_code !== undefined && body.branch_code !== null && body.branch_code !== "")client_info.branch_code = body.branch_code;
-    //if (body.sub_broker_code !== undefined && body.sub_broker_code !== null && body.sub_broker_code !== "") client_info.sub_broker_code = body.sub_broker_code;
-    //if (body.dealer_code !== undefined && body.dealer_code !== null && body.dealer_code !== "")client_info.dealer_code = body.dealer_code;
-
+    if (body.branch_code !== undefined && body.branch_code !== null && body.branch_code !== "")client_info.branch_code = body.branch_code;
+    if (body.sub_broker_code !== undefined && body.sub_broker_code !== null && body.sub_broker_code !== "") client_info.sub_broker_code = body.sub_broker_code;
+    if (body.dealer_code !== undefined && body.dealer_code !== null && body.dealer_code !== "")client_info.dealer_code = body.dealer_code;
+    console.log(client_info);
     return await clientModel.saveClient(client_info);
 }
 
@@ -206,16 +237,17 @@ const saveClientProfile= async(req:any,body:any)=> {
     try {
         let client_profile = {
             client_id:body.client_id,
-            organization_id:body.organization_id,
+            organization_id: req.user.organization_id || 1,
+            created_by:req.user.created_by || 0,
+            updated_by:req.user.updated_by || 0,
         } as any;
 
         if (body.pan_number !== undefined && body.pan_number !== null && body.pan_number !== "") client_profile.pan_number = body.pan_number;
         if (body.bank_name !== undefined && body.bank_name !== null && body.bank_name !== "") client_profile.bank_name = body.bank_name;
         if (body.bank_account_number !== undefined && body.bank_account_number !== null && body.bank_account_number !== "") client_profile.bank_account_number = body.bank_account_number;
         if (body.bank_ifsc_code !== undefined && body.bank_ifsc_code !== null && body.bank_ifsc_code !== "") client_profile.bank_ifsc_code = body.bank_ifsc_code;
-
-        // if (body.date_of_birth !== undefined && body.date_of_birth !== null && body.date_of_birth !== "")client_profile.date_of_birth = body.date_of_birth;
-        // if (body.default_dp !== undefined && body.default_dp !== null && body.default_dp !== "") client_profile.default_dp = body.default_dp;
+       // if (body.date_of_birth !== undefined && body.date_of_birth !== null && body.date_of_birth !== "")client_profile.date_of_birth = body.date_of_birth;
+        if (body.default_dp !== undefined && body.default_dp !== null && body.default_dp !== "") client_profile.default_dp = body.default_dp;
 
         return await clientModel.saveClientProfile(client_profile);
 
@@ -229,7 +261,7 @@ const saveClientAddress= async(req:any,body:any)=> {
     try {
         let client_address = {
             client_id:body.client_id,
-            organization_id:body.organization_id,
+            organization_id:req.user.organization_id || 1,
         } as any;
 
         if (body.address_1 !== undefined && body.address_1 !== null && body.address_1 !== "")client_address.address_1 = body.address_1;
@@ -246,13 +278,16 @@ const saveClientAddress= async(req:any,body:any)=> {
 const saveFileLog = async(req:any,file:any,fields:any)=> {
     let file_log = {
         created_by:1,
-        organization_id:1,
+        organization_id:req.user.organization_id || 1,
         original_file_name:file.originalFilename,
     } as any;
     return await clientModel.saveClientFileLog(file_log);
 }
 
 export default {
+    fetch_all_clients_with_pagination: fetch_all_clients_with_pagination,
     fetch_all_clients:fetch_all_clients,
-    import_clients: import_clients
+    import_clients: import_clients,
+    save_client_info:save_client_info
+
 }

@@ -14,5 +14,7 @@ export default {
     authorizationIgnorePath: [
         `${BASE}/healthCheck`,
         `${BASE}/user/login-email`,
+        `${BASE}/rbac/fetchUserNavigationPermissions`,
+
     ],
 };

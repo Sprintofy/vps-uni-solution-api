@@ -7,6 +7,13 @@ import clientController from "../controllers/client.controller";
 
 router.post('/import-clients', clientController.import_clients);
 
-router.post('/fetch-all', clientController.fetch_all_clients);
+router.post('/save-client', clientController.save_client_info);
+
+router.post('/fetch-all', clientController.fetch_all_clients_with_pagination);
+
+router.get('/fetch-all', clientController.fetch_all_clients);
+
+router.get('/fetch-city', clientController.fetch_all_cities);
+
 
 export default router;

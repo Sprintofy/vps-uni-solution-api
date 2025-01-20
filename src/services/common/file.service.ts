@@ -5,6 +5,7 @@ import * as path from 'path';
 import multer from 'multer';
 import csvParse from 'csv-parse';
 import CONSTANTS from '../../common/constants/constants';
+const awsS3Bucket = require("../utilities/awsS3Bucket.service");
 
 // Set up multer storage
 const storage = multer.diskStorage({
@@ -119,6 +120,33 @@ const deleteFile = async (filePath: string): Promise<void> => {
             }
         });
     });
+};
+
+const uploadFileToS3Bucket = async (body: any) => {
+    try {
+        // Process the form to get the image information
+
+        const filePath = body.filepath;
+        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + body.organization_id ;
+
+        // Check if "folder" exists on S3 by listing objects with a specific prefix
+        const isFolderExists = await awsS3Bucket.isFolderExists(s3FolderPath);
+
+        // Create "folder" (simulate directory) if it doesn't exist
+        if (!isFolderExists) {
+            const createFolder = await awsS3Bucket.createFolder(s3FolderPath);
+        }
+
+        const fileName: string =  body.file_name;
+
+        // Upload the file to the specified "folder" in S3
+        const fileStream = fs.createReadStream(filePath);
+        const result = await awsS3Bucket.uploadFile(fileStream, s3FolderPath, fileName);
+        return result.key;
+    } catch (error:any) {
+        console.error(`Error processing form or uploading file: ${error.message}`);
+        throw error;
+    }
 };
 
 export default {
