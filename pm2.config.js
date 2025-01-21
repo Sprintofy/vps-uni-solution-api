@@ -1,7 +1,7 @@
 module.exports = {
     apps : [{
         name      : 'Pre Trade API',
-        script    : './bin/src/app.js',
+        script    : './bin/server.js',
         node_args : '-r dotenv/config'
     }],
 }
