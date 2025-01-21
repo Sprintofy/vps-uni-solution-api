@@ -13,6 +13,7 @@ module.exports = {
             env_production: {
                 NODE_ENV: 'production',         // Environment variable for production
             },
+            interpreter: '/usr/bin/node',     // Explicitly set Node.js as the interpreter
         },
     ],
 };
