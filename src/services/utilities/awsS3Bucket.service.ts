@@ -124,6 +124,18 @@ const getS3Object = async (s3Path: string): Promise<string> => {
     }
 };
 
+const downloadFileFromS3 = async (key: string, file_path: string) => {
+    const params = { Bucket: bucketName, Key: key };
+    const file = fs.createWriteStream(file_path);
+    return new Promise<void>((resolve, reject) => {
+        s3.getObject(params)
+            .createReadStream()
+            .on('error', reject)
+            .pipe(file)
+            .on('close', resolve);
+    });
+};
+
 module.exports = {
     isFolderExists,
     createFolder,
@@ -131,5 +143,6 @@ module.exports = {
     getPublicUrlForS3Path,
     uploadFilestreamToS3,
     getS3Object,
-    uploadExcelfile
+    uploadExcelfile,
+    downloadFileFromS3
 };

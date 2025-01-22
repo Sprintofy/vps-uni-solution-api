@@ -4,6 +4,10 @@ import clientTradeModel from '../models/preTrade.model';
 import clientModel from "../models/client.model";
 import fileService from './common/file.service';
 import emailNotificationServiceService from "./common/notification.service";
+import path from "path";
+import moment from "moment";
+import fs from "fs";
+const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 const fetch_all_clients_trades = async (req: any) => {
     try {
@@ -399,6 +403,45 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
         throw error
     }
 }
+
+const download_zip_file = async (req:any) => {
+    try {
+        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const uploadDir = path.join(__dirname, '../../../public/upload');
+        const zipFilePath = path.join(uploadDir, file_name);
+
+        // Create temp directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const downloadedFiles: string[] = [];
+
+        // Download each file from S3
+        // for (const key of keys) {
+        //     const localFilePath = path.join(uploadDir, path.basename(key));
+        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
+        //     downloadedFiles.push(localFilePath);
+        // }
+
+        // Create a zip file
+        await fileService.createZipFile(downloadedFiles, zipFilePath);
+
+        // Upload the zip file back to S3
+        const uploadedZipKey = `zipped/${file_name}`;
+        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
+
+        // Cleanup local files
+        downloadedFiles.forEach((file) => fs.unlinkSync(file));
+        fs.unlinkSync(zipFilePath);
+
+        return zipFileUrl;
+    } catch (error: any) {
+        console.error(`Error processing files: ${error.message}`);
+        throw error;
+    }
+};
+
 
 /*************** MYSQL CURD Operation *************/
 

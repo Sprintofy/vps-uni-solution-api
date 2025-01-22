@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/pravin2151/uni-solution-api#readme",
   "dependencies": {
+    "archiver": "^7.0.1",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
@@ -51,6 +52,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/archiver": "^6.0.3",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",

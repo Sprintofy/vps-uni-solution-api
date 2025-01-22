@@ -3,6 +3,7 @@ import fs from 'fs';
 import * as XLSX from "xlsx";
 import * as path from 'path';
 import multer from 'multer';
+import archiver from 'archiver';
 import csvParse from 'csv-parse';
 import CONSTANTS from '../../common/constants/constants';
 const awsS3Bucket = require("../utilities/awsS3Bucket.service");
@@ -149,10 +150,29 @@ const uploadFileToS3Bucket = async (body: any) => {
     }
 };
 
+const createZipFile = (files: string[], file_path: string) => {
+    return new Promise<void>((resolve, reject) => {
+        const output = fs.createWriteStream(file_path);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        output.on('close', resolve);
+        archive.on('error', reject);
+
+        archive.pipe(output);
+        files.forEach((file) => {
+            const fileName = path.basename(file);
+            archive.file(file, { name: fileName });
+        });
+
+        archive.finalize();
+    });
+};
+
 export default {
     parseFormData,
     parseCSVFile,
     parseExcelFile,
     deleteFile,
-    createOutputFile
+    createOutputFile,
+    createZipFile:createZipFile
 };
