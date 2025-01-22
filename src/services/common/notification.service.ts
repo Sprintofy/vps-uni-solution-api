@@ -237,7 +237,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
     // Generate PDF
 
     const file_name = `${data.client_code}_trade_info_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-    const uploadDir = path.join(__dirname, 'upload'); // Create directory path relative to the current script
+    const uploadDir = path.join(__dirname, '../../../public/upload'); // Create directory path relative to the current script
     const file_path = path.join(uploadDir, file_name);
 
     console.log(file_path);
@@ -245,16 +245,18 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
     // Close the browser
     await browser.close();
 
-   // const aws_s3_url = await uploadTemplateFileToS3(organization_id,{file_name,file_path})
+    const aws_s3_url = await uploadTemplateFileToS3(organization_id,{file_name,file_path})
+
+    console.log("aws_s3_url",aws_s3_url)
 
    //  fs.unlinkSync(file_path);
-    return file_path;
+    return aws_s3_url;
 }
 
 const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
     try {
 
-        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + organization_id;
+        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + 1;
 
         // Check if "folder" exists on S3 by listing objects with a specific prefix
         const isFolderExists = await awsS3BucketService.isFolderExists(s3FolderPath);
