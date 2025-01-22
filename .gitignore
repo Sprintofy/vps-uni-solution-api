@@ -141,3 +141,6 @@ combined.log
 package-lock.json
 .vscode
 .sql
+
+# public folde
+public
