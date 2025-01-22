@@ -92,7 +92,7 @@ const uploadFilestreamToS3 = async (data: any) => {
                 Body: fileStream,
                 // ACL:'public-read'
             }).promise();
-        return { url: CONFIG.AWS.S3.URL + data.file.type + data.file.name };
+        return { url: CONFIG.AWS.S3.BASE_URL + data.file.type + data.file.name };
     } catch (error) {
         throw error;
     }
