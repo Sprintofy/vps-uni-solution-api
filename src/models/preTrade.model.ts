@@ -135,7 +135,7 @@ class ClientTradeModel extends BaseModel {
     async fetch_trade_proof_by_client_id(client_is: number) {
         const query = `select 
         pre_trade_proof_id, client_id, client_code, organization_id, 
-        is_email_sent, is_email_received, email_url, email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}', referral_website_banner)as pdf_url, 
+        is_email_sent, is_email_received, email_url, email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url, 
         email_response, status, created_by, updated_by, created_date, updated_date
         FROM pre_trade_proofs where client_id =  ? `;
         return await this._executeQuery(query, [client_is]);
