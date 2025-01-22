@@ -77,14 +77,7 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
       <div>
       <p></p>
       <p>Best Regards,</p>
-      <p>Rainmakers Broking House</p>
-      <p>Off.no-124, Siddharth Towers</p>
-      <p>Near Karishma Complex,Kothrud Pune-411038.</p>
-      <p>Trading Desk: 8976738705 / 8976738706 , 020-29525731/25467100</p> 
-      <p>Back Office : 9325455678</p>
-      <p>& Support : 9822477879</p>
-      <p>WhatsApp : 9049775678</p>
-      <p>Email : rainmakersbh@gmail.com</p>
+      ${organizations_config[0].email_regards}
       </div>
     </div>
   </body>

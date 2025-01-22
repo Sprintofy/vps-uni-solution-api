@@ -10,17 +10,8 @@ import organizationConfigModel from '../../models/organizationConfig.model'
 const createTransporter = async (organization_id: any) => {
 
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
-
     // Create transporter
-    const transporter = nodemailer.createTransport( {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: 'pravinjagtap2151@gmail.com',
-            pass: 'ivng kkqn fmba qlki',
-        },
-    });
+    const transporter = nodemailer.createTransport( organizations_config[0].email_config);
 
     return transporter;
 };
