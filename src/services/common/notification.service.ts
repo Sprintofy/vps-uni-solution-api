@@ -7,18 +7,12 @@ import nodemailer from 'nodemailer';
 import moment from "moment/moment";
 import emailService from "../utilities/email.service";
 const awsS3BucketService = require("../utilities/awsS3Bucket.service");
-
+import organizationConfigModel from '../../models/organizationConfig.model'
 
 const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
 
-    // todo fetch Email/template config From Organization wise
-
-    const organizations_config = {
-        from_email: 'pravinjagtap2151@gmail.com',
-        email_subject:`Pre Trade Confirmation`
-        //email_subject:`${client.client_code}_${moment().format('DDMMYYYY')}`
-    }
-
+    console.log("organizations_config", organizations_config)
     let emailBody = `<!DOCTYPE html>
                 <html>
                 <head>
@@ -96,12 +90,10 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
   </body>
   </html>`;
 
-
-
     const mailOptions = {
-        from: organizations_config.from_email ,
+        from: organizations_config[0].from_email ,
         to: [client.email],
-        subject:organizations_config.email_subject,
+        subject:organizations_config[0].email_subject,
         html: emailBody,
     };
 

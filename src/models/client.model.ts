@@ -49,7 +49,7 @@ class ClientModel extends BaseModel {
     async fetchClientInfoByIds(ids: any,organization_id:number) {
         const query = `
         SELECT 
-        DISTINCT client_id,client_code,client_name,email,mobile,status
+        DISTINCT client_id,client_code,client_name,email,mobile,status,organization_id
         FROM clients 
         WHERE client_code IN (?)
         AND organization_id = ?;`;

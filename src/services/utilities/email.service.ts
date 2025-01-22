@@ -4,13 +4,15 @@ import nodemailer from 'nodemailer';
 import imap from 'imap-simple';
 import fetch from "nodemailer/lib/fetch";
 import {MailParser, simpleParser} from "mailparser";
+import organizationConfigModel from '../../models/organizationConfig.model'
 
-const createTransporter = (organization_id: any) => {
 
-    // todo daynamic Organization email fetch
+const createTransporter = async (organization_id: any) => {
+
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
 
     // Create transporter
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport( {
         host: 'smtp.gmail.com',
         port: 465,
         secure: true,
@@ -45,7 +47,7 @@ const fetchImapConfig = (organization_id: any) => {
 const sendEmail = async (organization_id: any, mailOptions: any) => {
     try {
         // Create a dynamic transporter based on organization_id
-        const transporter = createTransporter(organization_id);
+        const transporter = await createTransporter(organization_id);
         // Send the email
         const results = await transporter.sendMail(mailOptions);
         console.log(`Email sent successfully..!!`, results);
@@ -60,7 +62,7 @@ const sendOrganizationWiseEmail = async (organization_id: any,mailOptions: any) 
     try {
         // Create a dynamic transporter based on organization_id
 
-        const transporter = createTransporter(organization_id);
+        const transporter = await createTransporter(organization_id);
         // Send the email
         const results = await transporter.sendMail(mailOptions);
         console.log(`Email sent successfully..!!-->`,mailOptions.to);

@@ -162,6 +162,7 @@ const save_bulk_pre_trade_info = async(req:any,fields:any,data:any)=> {
 
 
         const batchResults = pre_trades_info.client_wise_trades.map(async (client: any) => {
+            console.log(client)
             return save_bulk_trades_by_client(req,client);
         });
 
@@ -377,7 +378,6 @@ const save_trades_by_client = async(req:any)=> {
 const fetch_trades_details_by_client_id = async(req:any)=> {
     try {
          let response = {} as any;
-        console.log("client_id",req.query)
 
         const client_info = await clientModel.fetch_client_info_by_id(req.query.client_id);
 
