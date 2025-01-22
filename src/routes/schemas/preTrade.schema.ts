@@ -7,7 +7,7 @@ export default {
             client_id: Joi.number().integer().required(),
             organization_id: Joi.number().integer().required(),
             client_code: Joi.string().trim().required(),
-            trade_info: Joi.array().items(
+            unique_trade_info: Joi.array().items(
                 Joi.object().keys({
                     client_id: Joi.number().integer().required(),
                     client_code: Joi.string().trim().required(),

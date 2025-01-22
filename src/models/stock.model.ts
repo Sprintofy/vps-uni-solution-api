@@ -15,9 +15,8 @@ class StockModel extends BaseModel {
     async fetchAllStocksWithPagignation(organization_id:number,searchText:any,limit:any,offset:any,sort:any) {
         let parameters=[];
         let query =`SELECT * FROM stock_master `;
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  WHERE stock_name LIKE ? ", parameters.push('%' + searchText + '%')):""
+        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  WHERE script_name LIKE ? ", parameters.push('%' + searchText + '%')):""
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
-
         query += " LIMIT ? OFFSET ? ;";
 
         parameters.push(limit, offset);

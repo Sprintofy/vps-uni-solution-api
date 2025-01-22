@@ -342,7 +342,7 @@ const save_trades_by_client = async(req:any)=> {
         req.body.client_code = client_info[0].client_code;
 
         // Save pre-trade info and update trade objects with pre_trade_info_id
-        const preTradeInfoPromises = req.body.trade_info.map(async (trade: any) => {
+        const preTradeInfoPromises = req.body.unique_trade_info.map(async (trade: any) => {
             const results = await save_pre_trade_info(req, trade);
             return { ...trade, pre_trade_info_id: results.insertId };
         });
