@@ -18,11 +18,11 @@ router.post('/save-trades',celebrate(clientTradeSchema.save_pre_trade),clientTra
 // Download
 router.get('/download-all-pdf',clientTradeController.download_all_pdf);
 
-router.get('/download-all-email',clientTradeController.download_all_pdf);
+router.get('/download-all-email',clientTradeController.download_all_email);
 
-router.get('/download-all-client-email',clientTradeController.download_all_pdf);
+router.get('/download-all-client-email',clientTradeController.download_all_email_by_client);
 
-router.get('/download-all-client-pdf',clientTradeController.download_all_pdf);
+router.get('/download-all-client-pdf',clientTradeController.download_all_pdf_by_client);
 
 router.get('/download-trade-email',clientTradeController.download_all_pdf);
 

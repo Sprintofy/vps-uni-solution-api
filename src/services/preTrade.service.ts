@@ -404,6 +404,82 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
     }
 }
 
+const download_all_email = async (req:any) => {
+    try {
+        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const uploadDir = path.join(__dirname, '../../../public/upload');
+        const zipFilePath = path.join(uploadDir, file_name);
+
+        // Create temp directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const downloadedFiles: string[] = [];
+
+        // Download each file from S3
+        // for (const key of keys) {
+        //     const localFilePath = path.join(uploadDir, path.basename(key));
+        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
+        //     downloadedFiles.push(localFilePath);
+        // }
+
+        // Create a zip file
+        await fileService.createZipFile(downloadedFiles, zipFilePath);
+
+        // Upload the zip file back to S3
+        const uploadedZipKey = `zipped/${file_name}`;
+        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
+
+        // Cleanup local files
+        downloadedFiles.forEach((file) => fs.unlinkSync(file));
+        fs.unlinkSync(zipFilePath);
+
+        return zipFileUrl;
+    } catch (error: any) {
+        console.error(`Error processing files: ${error.message}`);
+        throw error;
+    }
+};
+
+const download_all_pdf = async (req:any) => {
+    try {
+        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const uploadDir = path.join(__dirname, '../../../public/upload');
+        const zipFilePath = path.join(uploadDir, file_name);
+
+        // Create temp directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const downloadedFiles: string[] = [];
+
+        // Download each file from S3
+        // for (const key of keys) {
+        //     const localFilePath = path.join(uploadDir, path.basename(key));
+        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
+        //     downloadedFiles.push(localFilePath);
+        // }
+
+        // Create a zip file
+        await fileService.createZipFile(downloadedFiles, zipFilePath);
+
+        // Upload the zip file back to S3
+        const uploadedZipKey = `zipped/${file_name}`;
+        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
+
+        // Cleanup local files
+        downloadedFiles.forEach((file) => fs.unlinkSync(file));
+        fs.unlinkSync(zipFilePath);
+
+        return zipFileUrl;
+    } catch (error: any) {
+        console.error(`Error processing files: ${error.message}`);
+        throw error;
+    }
+};
+
 const download_zip_file = async (req:any) => {
     try {
         const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
@@ -442,6 +518,81 @@ const download_zip_file = async (req:any) => {
     }
 };
 
+const download_all_pdf_by_client = async (req:any) => {
+    try {
+        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const uploadDir = path.join(__dirname, '../../../public/upload');
+        const zipFilePath = path.join(uploadDir, file_name);
+
+        // Create temp directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const downloadedFiles: string[] = [];
+
+        // Download each file from S3
+        // for (const key of keys) {
+        //     const localFilePath = path.join(uploadDir, path.basename(key));
+        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
+        //     downloadedFiles.push(localFilePath);
+        // }
+
+        // Create a zip file
+        await fileService.createZipFile(downloadedFiles, zipFilePath);
+
+        // Upload the zip file back to S3
+        const uploadedZipKey = `zipped/${file_name}`;
+        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
+
+        // Cleanup local files
+        downloadedFiles.forEach((file) => fs.unlinkSync(file));
+        fs.unlinkSync(zipFilePath);
+
+        return zipFileUrl;
+    } catch (error: any) {
+        console.error(`Error processing files: ${error.message}`);
+        throw error;
+    }
+};
+
+const download_all_email_by_client = async (req:any) => {
+    try {
+        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const uploadDir = path.join(__dirname, '../../../public/upload');
+        const zipFilePath = path.join(uploadDir, file_name);
+
+        // Create temp directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const downloadedFiles: string[] = [];
+
+        // Download each file from S3
+        // for (const key of keys) {
+        //     const localFilePath = path.join(uploadDir, path.basename(key));
+        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
+        //     downloadedFiles.push(localFilePath);
+        // }
+
+        // Create a zip file
+        await fileService.createZipFile(downloadedFiles, zipFilePath);
+
+        // Upload the zip file back to S3
+        const uploadedZipKey = `zipped/${file_name}`;
+        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
+
+        // Cleanup local files
+        downloadedFiles.forEach((file) => fs.unlinkSync(file));
+        fs.unlinkSync(zipFilePath);
+
+        return zipFileUrl;
+    } catch (error: any) {
+        console.error(`Error processing files: ${error.message}`);
+        throw error;
+    }
+};
 
 /*************** MYSQL CURD Operation *************/
 
@@ -648,5 +799,9 @@ export default {
     save_trades_by_client:save_trades_by_client,
     fetch_all_clients_trades:fetch_all_clients_trades,
     fetch_trades_details_by_client_id:fetch_trades_details_by_client_id,
-    fetch_all_clients_trades_logs:fetch_all_clients_trades_logs
+    fetch_all_clients_trades_logs:fetch_all_clients_trades_logs,
+    download_all_email: download_all_email,
+    download_all_pdf: download_all_pdf,
+    download_all_pdf_by_client: download_all_pdf_by_client,
+    download_all_email_by_client: download_all_email_by_client
 }
