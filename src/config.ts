@@ -22,10 +22,10 @@ export default {
     },
     AWS : {
         S3: {
-            URL: ENV.AWS_S3_BASE_URL,
+            BASE_URL: ENV.AWS_S3_BASE_URL,
             ACCESS_KEY: ENV.AWS_S3_ACCESS_KEY,
             SECRET_KEY: ENV.AWS_S3_SECRET_KEY,
-            BUCKET_NAME: ENV.AWS_S3_BUCKET_NAME || 'qa-humpy-s3',
+            BUCKET_NAME: ENV.AWS_S3_BUCKET_NAME || 'dev-s3-uni-solution',
             REGION: ENV.AWS_S3_BUCKET_REGION
         }
     }
