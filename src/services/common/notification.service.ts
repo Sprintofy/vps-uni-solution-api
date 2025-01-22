@@ -241,7 +241,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
     try {
 
-        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + 1;
+        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+1;
 
         // Check if "folder" exists on S3 by listing objects with a specific prefix
         const isFolderExists = await awsS3BucketService.isFolderExists(s3FolderPath);

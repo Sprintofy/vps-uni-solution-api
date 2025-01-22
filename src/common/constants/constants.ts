@@ -3,7 +3,7 @@
 export default {
     AWS:{
         S3_BUCKET:{
-            FOLDER_NAME: "organization_"
+            FOLDER_NAME: "proofs"
         },
     },
 
