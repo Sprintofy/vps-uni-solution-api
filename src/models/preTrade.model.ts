@@ -24,6 +24,7 @@ class ClientTradeModel extends BaseModel {
 
         parameters.push(limit, offset);
 
+
         return await this._executeQuery(query, parameters)
     }
 
@@ -36,7 +37,7 @@ class ClientTradeModel extends BaseModel {
             LEFT JOIN pre_trades_info pti ON pti.pre_trade_info_id = pt.pre_trade_info_id
             LEFT JOIN pre_trades_files ptf ON ptf.pre_tades_file_id = pti.pre_tades_file_id
             WHERE pt.organization_id = ? `
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND  first_name LIKE ?  ", parameters.push('%' + searchText + '%')):""
+        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + searchText + '%')):""
         return await this._executeQuery(query, parameters)
     }
 
@@ -140,6 +141,25 @@ class ClientTradeModel extends BaseModel {
         FROM pre_trade_proofs where client_id =  ? `;
         return await this._executeQuery(query, [client_is]);
     }
+
+
+    async fetch_all_trade_proof_urls() {
+        const query = `select 
+        pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url    
+        FROM pre_trade_proofs`;
+        return await this._executeQuery(query, []);
+    }
+
+
+
+    async fetch_all_trade_proof_urls_by_client_id(client_id:number) {
+        const query = `select 
+        pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url    
+        FROM pre_trade_proofs where client_id = ?`;
+        return await this._executeQuery(query, [client_id]);
+    }
+
+
 
     async save_pre_trade_proofs(data: any) {
         const query = `INSERT INTO pre_trade_proofs SET ? ;`;

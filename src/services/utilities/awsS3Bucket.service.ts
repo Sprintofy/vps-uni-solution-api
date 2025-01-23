@@ -127,6 +127,7 @@ const getS3Object = async (s3Path: string): Promise<string> => {
 const downloadFileFromS3 = async (key: string, file_path: string) => {
     const params = { Bucket: bucketName, Key: key };
     const file = fs.createWriteStream(file_path);
+
     return new Promise<void>((resolve, reject) => {
         s3.getObject(params)
             .createReadStream()

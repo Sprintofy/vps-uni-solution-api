@@ -24,8 +24,10 @@
   },
   "homepage": "https://github.com/pravin2151/uni-solution-api#readme",
   "dependencies": {
+    "@types/axios": "^0.9.36",
     "archiver": "^7.0.1",
     "aws-sdk": "^2.1692.0",
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "celebrate": "^15.0.3",
