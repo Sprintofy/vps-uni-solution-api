@@ -203,7 +203,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
                 </tr>
                 <tr>
                     <td><strong>Order Time (HH:MM):</strong></td>
-                    <td>${moment().format('hh:mm A')}</td>
+                    <td>09:15 AM</td>
                 </tr>
             </tbody>
         </table>
