@@ -4,7 +4,8 @@ const router = Router();
 
 // import health check routes
 import healthCheckRoute from "../healthCheck/healthCheck.routes";
-router.use('/',healthCheckRoute);
+
+router.use('/healthCheck',healthCheckRoute);
 
 // import routes
 import usersRoute from "./user.route";
