@@ -7,7 +7,7 @@ class ClientModel extends BaseModel {
     }
 
     async fetch_all_clients(organization_id:number) {
-        const query = `SELECT client_id,client_code,client_name,email,mobile,status  FROM clients 
+        const query = `SELECT client_id,client_code,CONCAT(client_name, ' - ', client_code) AS client_name,email,mobile,status  FROM clients 
         WHERE organization_id = ? ;`;
         return await this._executeQuery(query, [organization_id]);
     }
