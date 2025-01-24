@@ -1,9 +1,8 @@
 "use strict";
-import puppeteer from 'puppeteer';
+import htmlToPdf from 'html-pdf';
 import fs from 'fs';
 import path from 'path';
 import CONSTANTS from '../../common/constants/constants';
-import nodemailer from 'nodemailer';
 import moment from "moment/moment";
 import emailService from "../utilities/email.service";
 const awsS3BucketService = require("../utilities/awsS3Bucket.service");
@@ -213,22 +212,31 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 `;
 
     // Launch Puppeteer to generate PDF
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+   // const browser = await puppeteer.launch();
+   // const page = await browser.newPage();
 
     // Set HTML content
-    await page.setContent(htmlContent);
+    // await page.setContent(htmlContent);
 
     // Generate PDF
 
     const file_name = `${data.client_code}_trade_info_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-    const uploadDir = path.join(__dirname, '../../../public/reports'); // Create directory path relative to the current script
+    const uploadDir = path.join(__dirname, '../../../../public/upload'); // Create directory path relative to the current script
     const file_path = path.join(uploadDir, file_name);
 
     console.log(file_path);
-    await page.pdf({ path: file_path, format: 'A4', printBackground: true });
+
+    // await page.pdf({ path: file_path, format: 'A4', printBackground: true });
     // Close the browser
-    await browser.close();
+    // await browser.close();
+
+    htmlToPdf.create(htmlContent, { format: 'A4' }).toFile(file_path, (err:any, res:any) => {
+        if (err) {
+            console.error('Error generating PDF:', err);
+        } else {
+            console.log(`PDF saved at: ${res.filename}`);
+        }
+    });
 
     const aws_s3_url = await uploadTemplateFileToS3(organization_id,{file_name,file_path})
 
