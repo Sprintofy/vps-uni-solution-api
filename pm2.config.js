@@ -14,7 +14,7 @@ module.exports = {
                 NODE_ENV: 'production',         // Environment variable for production
             },
             interpreter: '/usr/bin/node',     // Explicitly set Node.js as the interpreter
-            ignore_watch: ["src/services/uploads","src/services/upload"]
+            //ignore_watch: ["src/services/uploads","src/services/upload"]
         },
     ],
 };
