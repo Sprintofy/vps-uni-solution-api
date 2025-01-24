@@ -1,5 +1,5 @@
 "use strict";
-import htmlToPdf from 'html-pdf';
+import htmlToPdf from 'jspdf';
 import fs from 'fs';
 import path from 'path';
 import CONSTANTS from '../../common/constants/constants';
@@ -237,16 +237,10 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 
 const generatePdfFile = async (htmlContent: string, filePath: string): Promise<boolean> => {
     try {
-        console.log("phantomPath",phantomPath);
-        await new Promise<void>((resolve, reject) => {
-            htmlToPdf.create(htmlContent, { format: 'A4',phantomPath }).toFile(filePath, (err: Error | null, res: { filename: string }) => {
-                if (err) {
-                    return reject(new Error(`Error generating PDF: ${err.message}`));
-                }
-                console.log(`PDF saved at: ${res.filename}`);
-                resolve();
-            });
-        });
+        const doc = new htmlToPdf();
+        doc.text(htmlContent, 10, 10);
+        doc.save(filePath);
+        console.log('PDF generated successfully');
         return true;
     } catch (error) {
         console.error(`Error processing form or PDF file: ${(error as Error).message}`);
