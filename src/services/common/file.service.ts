@@ -11,7 +11,7 @@ const awsS3Bucket = require("../utilities/awsS3Bucket.service");
 // Set up multer storage
 const storage = multer.diskStorage({
     destination: (req:any, file:any, cb:any) => {
-        const uploadPath = path.join(__dirname, '..', '../../../public/upload');
+        const uploadPath = path.join(__dirname, '..', '../../../public/reports');
         console.log('uploadPath--->?',uploadPath) // Path where files will be stored
         fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath); // Store files in 'uploads' folder
@@ -22,10 +22,10 @@ const storage = multer.diskStorage({
     }
 });
 
-// Create multer upload middleware
+// Create multer reports middleware
 const upload = multer({ storage }).array('file', 10); // Allow up to 10 files
 
-// Middleware to handle form data and file upload
+// Middleware to handle form data and file reports
 const parseFormData = async (req: any): Promise<{ fields: any; files: { filepath: string; originalFilename: string }[] }> => {
     return new Promise((resolve, reject) => {
         upload(req, req.res, (err: any) => {

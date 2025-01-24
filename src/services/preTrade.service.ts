@@ -548,7 +548,7 @@ const download_all_pdf = async (req: any) => {
         const uploadDir = path.join(__dirname, '/uploads');
         const zipFilePath = path.join(uploadDir, file_name);
 
-        // Create temporary upload directory if it doesn't exist
+        // Create temporary reports directory if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -615,7 +615,7 @@ const download_all_pdf = async (req: any) => {
 const download_zip_file = async (req:any) => {
     try {
         const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-        const uploadDir = path.join(__dirname, '../../public/upload');
+        const uploadDir = path.join(__dirname, '../../public/reports');
         const zipFilePath = path.join(uploadDir, file_name);
 
         // Create temp directory if it doesn't exist
@@ -744,7 +744,7 @@ const download_all_pdf_by_client = async (req:any) => {
 const download_all_email_by_client = async (req:any) => {
     try {
         const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-        const uploadDir = path.join(__dirname, '../../../public/upload');
+        const uploadDir = path.join(__dirname, '../../../public/reports');
         const zipFilePath = path.join(uploadDir, file_name);
 
         // Create temp directory if it doesn't exist
