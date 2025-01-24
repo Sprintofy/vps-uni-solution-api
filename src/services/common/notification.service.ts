@@ -234,21 +234,23 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
     return aws_s3_url;
 }
 
-const generatePdfFile = async (htmlContent: string, filePath: string) => {
+const generatePdfFile = async (htmlContent: string, filePath: string): Promise<boolean> => {
     try {
-        htmlToPdf.create(htmlContent, { format: 'A4' }).toFile(filePath, (err: Error | null, res: { filename: string }) => {
-            if (err) {
-                throw new Error(`Error generating PDF: ${err.message}`);
-            }
-            console.log(`PDF saved at: ${res.filename}`);
+        await new Promise<void>((resolve, reject) => {
+            htmlToPdf.create(htmlContent, { format: 'A4' }).toFile(filePath, (err: Error | null, res: { filename: string }) => {
+                if (err) {
+                    return reject(new Error(`Error generating PDF: ${err.message}`));
+                }
+                console.log(`PDF saved at: ${res.filename}`);
+                resolve();
+            });
         });
         return true;
     } catch (error) {
-        console.error(`Error processing form or pff file: ${(error as Error).message}`);
-        return true;
+        console.error(`Error processing form or PDF file: ${(error as Error).message}`);
+        return false;
     }
 };
-
 
 const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
     try {
