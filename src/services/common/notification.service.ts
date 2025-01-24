@@ -161,6 +161,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
                     <th>Buy/Sell</th>
                     <th>Quantity</th>
                     <th>Rate</th>
+                    <th>Trigger Price</th>
                 </tr>
             </thead>
             <tbody>
@@ -171,6 +172,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
                     <td>${trade.buy_or_sell == 'S' ? 'Sell' : 'Buy'}</td>
                     <td>${trade.quantity || ''}</td>
                     <td>${trade.price}</td>
+                     <td>${trade.trigger_price}</td>
                 </tr>`
     ).join('')}
         </tbody>
