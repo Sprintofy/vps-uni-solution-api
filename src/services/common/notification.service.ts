@@ -170,7 +170,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
                     <td>${trade.script_name || ''}</td>
                     <td>${trade.buy_or_sell == 'S' ? 'Sell' : 'Buy'}</td>
                     <td>${trade.quantity || ''}</td>
-                    <td>${trade.trigger_price}</td>
+                    <td>${trade.price}</td>
                 </tr>`
     ).join('')}
         </tbody>
