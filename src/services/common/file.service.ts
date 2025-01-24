@@ -11,7 +11,7 @@ const awsS3Bucket = require("../utilities/awsS3Bucket.service");
 // Set up multer storage
 const storage = multer.diskStorage({
     destination: (req:any, file:any, cb:any) => {
-        const uploadPath = path.join(__dirname, '..', '../public/upload');
+        const uploadPath = path.join(__dirname, '..', '../../../public/upload');
         console.log('uploadPath--->?',uploadPath) // Path where files will be stored
         fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath); // Store files in 'uploads' folder
