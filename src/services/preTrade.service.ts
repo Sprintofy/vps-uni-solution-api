@@ -17,6 +17,9 @@ const fetch_all_clients_trades = async (req: any) => {
         const clients = await clientTradeModel.fetchAllClientsTrades(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await clientTradeModel.fetchAllClientsTradesCount(1,req.body.query || "");
         return {
+            total_client_count:10,
+            total_email_sent:9,
+            total_email_received:8,
             data:clients,
             total:total[0].total
         }
@@ -25,6 +28,7 @@ const fetch_all_clients_trades = async (req: any) => {
         throw new Error(`Error: ${error.message}`);
     }
 }
+
 const fetch_all_clients_trades_logs = async (req: any) => {
     try {
         const clients = await clientTradeModel.fetch_all_clients_trades_logs(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");

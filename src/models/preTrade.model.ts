@@ -11,7 +11,7 @@ class ClientTradeModel extends BaseModel {
         let parameters=[];
         parameters.push(organization_id)
         let query =`SELECT DISTINCT c.client_id,c.organization_id,c.client_code,c.client_name,
-            c.mobile,c.email,c.client_name
+            c.mobile,c.email,c.client_name,'10' total_email_sent,'8' total_email_received
             FROM pre_trades pt
             LEFT JOIN clients c ON c.client_id = pt.client_id
             LEFT JOIN pre_trades_info pti ON pti.pre_trade_info_id = pt.pre_trade_info_id
