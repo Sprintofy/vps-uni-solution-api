@@ -29,7 +29,9 @@ const fetch_active_stock = async (req: any) => {
             ],
             exchange_code_drop_down: [
                 { id: 1, value: "NSE", label: "NSE" },
-                { id: 2, value: "BSE", label: "BSE" }
+                { id: 2, value: "BSE", label: "BSE" },
+                { id: 3, value: "BSE", label: "NSE FO" },
+                { id: 4, value: "BSE", label: "MCX" }
             ],
             order_type_drop_down: [
                 { id: 1, value: "L", label: "L" },
@@ -38,7 +40,10 @@ const fetch_active_stock = async (req: any) => {
             product_drop_down: [
                 { id: 1, value: "Delivery", label: "Delivery" },
                 { id: 2, value: "Carry Forward", label: "Carry Forward" },
-                { id: 3, value: "Intraday", label: "Intraday" }
+                { id: 3, value: "Intraday", label: "Intraday" },
+                { id: 4, value: "MTF", label: "MTF" },
+                { id: 5, value: "Normal", label: "Normal" },
+                { id: 6, value: "Regular", label: "Regular" }
             ]
         }));
         return updatedResults;
