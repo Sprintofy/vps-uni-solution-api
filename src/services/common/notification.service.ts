@@ -7,6 +7,7 @@ import moment from "moment/moment";
 import emailService from "../utilities/email.service";
 const awsS3BucketService = require("../utilities/awsS3Bucket.service");
 import organizationConfigModel from '../../models/organizationConfig.model'
+const phantomPath = path.resolve(__dirname, '../../../../node_modules/phantomjs-prebuilt/bin/phantomjs');
 
 const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
@@ -236,8 +237,9 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 
 const generatePdfFile = async (htmlContent: string, filePath: string): Promise<boolean> => {
     try {
+        console.log("phantomPath",phantomPath);
         await new Promise<void>((resolve, reject) => {
-            htmlToPdf.create(htmlContent, { format: 'A4' }).toFile(filePath, (err: Error | null, res: { filename: string }) => {
+            htmlToPdf.create(htmlContent, { format: 'A4',phantomPath }).toFile(filePath, (err: Error | null, res: { filename: string }) => {
                 if (err) {
                     return reject(new Error(`Error generating PDF: ${err.message}`));
                 }
