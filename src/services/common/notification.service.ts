@@ -222,7 +222,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
     // Generate PDF
 
     const file_name = `${data.client_code}_trade_info_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-    const uploadDir = path.join(__dirname, '../../../public/upload'); // Create directory path relative to the current script
+    const uploadDir = path.join(__dirname, '../../public/upload'); // Create directory path relative to the current script
     const file_path = path.join(uploadDir, file_name);
 
     console.log(file_path);

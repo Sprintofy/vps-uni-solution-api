@@ -615,7 +615,7 @@ const download_all_pdf = async (req: any) => {
 const download_zip_file = async (req:any) => {
     try {
         const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-        const uploadDir = path.join(__dirname, '../../../public/upload');
+        const uploadDir = path.join(__dirname, '../../public/upload');
         const zipFilePath = path.join(uploadDir, file_name);
 
         // Create temp directory if it doesn't exist
