@@ -96,12 +96,6 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 
     // todo fetch Email/template config From Organization wise
 
-    const organizations_config = {
-        from_email: 'pravinjagtap2151@gmail.com',
-        email_subject:`Pre Trade Confirmation`
-        //email_subject:`${client.client_code}_${moment().format('DDMMYYYY')}`
-    }
-
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -230,13 +224,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
     // Close the browser
     // await browser.close();
 
-    htmlToPdf.create(htmlContent, { format: 'A4' }).toFile(file_path, (err:any, res:any) => {
-        if (err) {
-            console.error('Error generating PDF:', err);
-        } else {
-            console.log(`PDF saved at: ${res.filename}`);
-        }
-    });
+     await generatePdfFile(htmlContent, file_path);
 
     const aws_s3_url = await uploadTemplateFileToS3(organization_id,{file_name,file_path})
 
@@ -245,6 +233,22 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
     fs.unlinkSync(file_path);
     return aws_s3_url;
 }
+
+const generatePdfFile = async (htmlContent: string, filePath: string) => {
+    try {
+        htmlToPdf.create(htmlContent, { format: 'A4' }).toFile(filePath, (err: Error | null, res: { filename: string }) => {
+            if (err) {
+                throw new Error(`Error generating PDF: ${err.message}`);
+            }
+            console.log(`PDF saved at: ${res.filename}`);
+        });
+        return true;
+    } catch (error) {
+        console.error(`Error processing form or pff file: ${(error as Error).message}`);
+        return true;
+    }
+};
+
 
 const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
     try {
