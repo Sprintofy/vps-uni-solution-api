@@ -207,7 +207,11 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 `;
 
     // Launch Puppeteer to generate PDF
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        executablePath: '/snap/bin/chromium',  // Path to Chromium from Snap
+        headless: true,
+        args: ['--no-sandbox'],  // Disable the sandbox (not recommended for production)
+});
    const page = await browser.newPage();
 
     // Set HTML content
