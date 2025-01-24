@@ -1,5 +1,5 @@
 "use strict";
-import htmlToPdf from 'jspdf';
+import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 import path from 'path';
 import CONSTANTS from '../../common/constants/constants';
@@ -207,11 +207,11 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 `;
 
     // Launch Puppeteer to generate PDF
-   // const browser = await puppeteer.launch();
-   // const page = await browser.newPage();
+    const browser = await puppeteer.launch();
+   const page = await browser.newPage();
 
     // Set HTML content
-    // await page.setContent(htmlContent);
+     await page.setContent(htmlContent);
 
     // Generate PDF
 
@@ -221,11 +221,10 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 
     console.log(file_path);
 
-    // await page.pdf({ path: file_path, format: 'A4', printBackground: true });
+     await page.pdf({ path: file_path, format: 'A4', printBackground: true });
     // Close the browser
-    // await browser.close();
-
-     await generatePdfFile(htmlContent, file_path);
+     await browser.close();
+     // await generatePdfFile(htmlContent, file_path);
 
     const aws_s3_url = await uploadTemplateFileToS3(organization_id,{file_name,file_path})
 
@@ -235,18 +234,18 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
     return aws_s3_url;
 }
 
-const generatePdfFile = async (htmlContent: string, filePath: string): Promise<boolean> => {
-    try {
-        const doc = new htmlToPdf();
-        doc.text(htmlContent, 10, 10);
-        doc.save(filePath);
-        console.log('PDF generated successfully');
-        return true;
-    } catch (error) {
-        console.error(`Error processing form or PDF file: ${(error as Error).message}`);
-        return false;
-    }
-};
+// const generatePdfFile = async (htmlContent: string, filePath: string): Promise<boolean> => {
+//     try {
+//         const doc = new htmlToPdf();
+//         doc.text(htmlContent, 10, 10);
+//         doc.save(filePath);
+//         console.log('PDF generated successfully');
+//         return true;
+//     } catch (error) {
+//         console.error(`Error processing form or PDF file: ${(error as Error).message}`);
+//         return false;
+//     }
+// };
 
 const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
     try {
