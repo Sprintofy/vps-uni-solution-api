@@ -2,6 +2,7 @@
 import { Joi, Segments } from 'celebrate';
 
 export default {
+
     save_pre_trade: {
         [Segments.BODY]: Joi.object().keys({
             client_id: Joi.number().integer().required(),
@@ -25,6 +26,12 @@ export default {
                     lots: Joi.number().integer().required()
                 }).unknown(false) // Disallow extra fields in trade_info objects
             ).required() // trade_info array is required
+        }).unknown(false).options({ abortEarly: false }) // Disallow extra fields in the body
+    },
+
+    pre_trade_proofs: {
+        [Segments.BODY]: Joi.object().keys({
+            client_id: Joi.number().integer().required(),
         }).unknown(false).options({ abortEarly: false }) // Disallow extra fields in the body
     }
 };

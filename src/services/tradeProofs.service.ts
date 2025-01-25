@@ -12,8 +12,8 @@ const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 const fetch_all_clients_proofs = async (req: any) => {
     try {
-        const clients = await tradeProofsModel.fetch_all_clients_proofs(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await tradeProofsModel.fetch_all_clients_proofs_count(1,req.body.query || "");
+        const clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await tradeProofsModel.fetch_all_clients_proofs_count(req.body.client_id,req.body.query || "");
         return {
             total_trade_count:10,
             total_pdf_generated_count:10,
