@@ -28,9 +28,9 @@ class TradeProofsModel extends BaseModel {
         return await this._executeQuery(query, parameters)
     }
 
-    async fetch_all_clients_proofs_count(organization_id:number ,searchText:any) {
+    async fetch_all_clients_proofs_count(client_id:number ,searchText:any) {
         let parameters=[]
-        parameters.push(organization_id)
+        parameters.push(client_id)
         let query =`SELECT COUNT(DISTINCT pft.pre_trade_proof_id) as total
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
@@ -39,26 +39,16 @@ class TradeProofsModel extends BaseModel {
         return await this._executeQuery(query, parameters)
     }
 
-    async saveClientTradeInfo(data: any) {
-        const query = `INSERT INTO client_pre_trade_info SET ? ;`;
-        return await this._executeQuery(query, [data]);
-    }
-
-    async saveClientTrade(data: any) {
-        const query = `INSERT INTO client_trades SET ? ;`;
-        return await this._executeQuery(query, [data]);
-    }
 
     /***************** Pre Trades  *********************/
 
-    async fetch_existing_pre_trade_client_ids(data: any) {
-        const query = `SELECT * FROM  pre_trades WHERE client_id IN ( ? ) ;`;
-        return await this._executeQuery(query, [data]);
+    async fetch_trade_by_client(client_id:number,searchText:any,limit:any,offset:any,sort:any) {
+        const query = `SELECT * FROM pre_trades WHERE client_id = ? `;
+        return await this._executeQuery(query, [client_id]);
     }
 
-
-    async fetch_trade_by_client(client_id: number) {
-        const query = `SELECT * FROM pre_trades WHERE client_id = ? `;
+    async fetch_trade_by_client_count(client_id:number ,searchText:any) {
+        const query = `SELECT COUNT(*) FROM pre_trades WHERE client_id = ? `;
         return await this._executeQuery(query, [client_id]);
     }
 

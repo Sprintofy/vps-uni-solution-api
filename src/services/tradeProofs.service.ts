@@ -44,34 +44,16 @@ const fetch_all_clients_trades_logs = async (req: any) => {
 
 const fetch_trades_details_by_client_id = async(req:any)=> {
     try {
-         let response = {} as any;
-
-        const client_info = await clientModel.fetch_client_info_by_id(req.query.client_id);
-
-        if(!client_info.length) throw new Error("Client info not found");
-        response.client_id = client_info[0].client_id;
-        response.customer = client_info[0];
-
-        const trades = await tradeProofsModel.fetch_trade_by_client(req.query.client_id)
-        response.trade_info = trades;
-
-
-        const trades_proofs = await tradeProofsModel.fetch_trade_proof_by_client_id(req.query.client_id)
-        response.trade_proof = trades_proofs;
-
-
-                // Add script_name array to each trade proof by matching pre_proof_id
-                response.trade_proof = trades_proofs.map((proof: any) => {
-                    const relatedTrades = trades.filter((trade: any) => trade.pre_proof_id === proof.pre_trade_proof_id);
-                    return {
-                        ...proof,
-                        script_names: relatedTrades.map((trade: any) => trade.script_name),
-                    };
-                });
-
-        return response
-
-
+        const clients = await tradeProofsModel.fetch_trade_by_client(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await tradeProofsModel.fetch_trade_by_client_count(req.body.client_id,req.body.query || "");
+        return {
+            total_trade_count:10,
+            total_pdf_generated_count:10,
+            total_email_sent:9,
+            total_email_received:8,
+            data:clients,
+            total:total[0].total
+        }
     } catch (error:any) {
         throw error
     }

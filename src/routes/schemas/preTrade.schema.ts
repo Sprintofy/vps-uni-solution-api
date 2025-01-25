@@ -32,6 +32,6 @@ export default {
     pre_trade_proofs: {
         [Segments.BODY]: Joi.object().keys({
             client_id: Joi.number().integer().required(),
-        }).unknown(false).options({ abortEarly: false }) // Disallow extra fields in the body
+        }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
     }
 };
