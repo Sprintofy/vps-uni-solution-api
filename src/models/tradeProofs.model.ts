@@ -12,7 +12,7 @@ class TradeProofsModel extends BaseModel {
         parameters.push(client_id)
         let query =`SELECT pft.pre_trade_proof_id, pft.client_id, pft.client_code,pft.organization_id, 
                 pft.is_email_sent, pft.is_email_received, pft.email_url, pft.email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url)as pdf_url, 
-                pft.email_response, pft.status, pft.created_by, pft.updated_by,pft.created_date, pft.updated_date
+                pft.email_response, pft.status, pft.created_by, pft.updated_by,DATE_FORMAT(pft.created_date, '%Y-%m-%d') as created_date  , pft.updated_date
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pt.client_id =  ?`;
