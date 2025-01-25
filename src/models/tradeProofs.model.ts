@@ -20,7 +20,7 @@ class TradeProofsModel extends BaseModel {
                                     '[',
                                     GROUP_CONCAT(
                                         JSON_ARRAY(
-                                            CONCAT(pt.script_name,'-',pt.exchange_code )
+                                            CONCAT('<p>',pt.script_name,' : ','<strong>',CASE WHEN pt.buy_or_sell = 'S' THEN 'SELL' ELSE 'BUY' END ,'</strong>','</p>' )
                                         )
                                     ),
                                     ']'
