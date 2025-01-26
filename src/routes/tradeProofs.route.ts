@@ -10,16 +10,13 @@ router.post('/fetch-all-proofs',celebrate(tradeProofsSchema.pre_trade_proofs), t
 router.post('/fetch-all-trades', tradeProofsController.fetch_pre_trades_by_client_id);
 
 // Download
-router.get('/download-all-pdf',tradeProofsController.download_all_pdf);
+router.get('/download-all-pdf',celebrate(tradeProofsSchema.download_all),tradeProofsController.download_all_pdf);
 
-router.get('/download-all-email',tradeProofsController.download_all_email);
+router.get('/download-all-email',celebrate(tradeProofsSchema.download_all),tradeProofsController.download_all_email);
 
-router.get('/download-all-client-email',tradeProofsController.download_all_email_by_client);
+router.get('/download-all-client-email',celebrate(tradeProofsSchema.download_all_client),tradeProofsController.download_all_email_by_client);
 
-router.get('/download-all-client-pdf',tradeProofsController.download_all_pdf_by_client);
+router.get('/download-all-client-pdf',celebrate(tradeProofsSchema.download_all_client),tradeProofsController.download_all_pdf_by_client);
 
-router.get('/download-trade-email',tradeProofsController.download_all_pdf);
-
-router.get('/download-trade-pdf',tradeProofsController.download_all_pdf);
 
 export default router;

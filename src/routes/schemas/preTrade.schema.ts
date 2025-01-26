@@ -57,5 +57,17 @@ export default {
         [Segments.QUERY]: Joi.object().keys({
             client_id: Joi.number().integer().required(),
         }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
-    }
+    },
+
+    download_all: {
+        [Segments.QUERY]: Joi.object().keys({
+            organization_id: Joi.number().integer().required(),
+        }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
+    },
+
+    download_all_client: {
+        [Segments.QUERY]: Joi.object().keys({
+            client_id: Joi.number().integer().required(),
+        }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
+    },
 };
