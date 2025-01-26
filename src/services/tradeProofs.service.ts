@@ -65,7 +65,7 @@ const download_all_email = async (req:any) => {
     try {
 
         const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
-        const uploadDir = path.join(__dirname, '/uploads');
+        const uploadDir = path.join(__dirname, '../../../public/upload');
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
         // Ensure the upload directory exists
@@ -132,7 +132,7 @@ const download_all_pdf = async (req: any) => {
     try {
 
         const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
-        const uploadDir = path.join(__dirname, '/uploads');
+        const uploadDir = path.join(__dirname, '../../../public/upload');
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
         // Ensure the upload directory exists
@@ -201,7 +201,7 @@ const download_all_pdf_by_client = async (req:any) => {
         const client_info = await clientModel.fetch_client_info_by_id(req.query.client_id);
 
         const zip_file_name = `${client_info[0].client_code}_pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
-        const uploadDir = path.join(__dirname, '../../public/upload');
+        const uploadDir = path.join(__dirname, '../../../public/upload');
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
         // Ensure the upload directory exists
@@ -270,7 +270,7 @@ const download_all_email_by_client = async (req:any) => {
         const client_info = await clientModel.fetch_client_info_by_id(req.query.client_id);
 
         const zip_file_name = `${client_info[0].client_code}_pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
-        const uploadDir = path.join(__dirname, '../../public/upload');
+        const uploadDir = path.join(__dirname, '../../../public/upload');
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
         // Ensure the upload directory exists
