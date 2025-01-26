@@ -34,11 +34,25 @@ export default {
             organization_id: Joi.number().integer().required(),
         }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
     },
+    
     pre_trade_proofs: {
         [Segments.BODY]: Joi.object().keys({
             client_id: Joi.number().integer().required(),
         }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
     },
+
+    fetch_all_logs_by_clients: {
+        [Segments.BODY]: Joi.object().keys({
+            client_id: Joi.number().integer().required(),
+        }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
+    },
+
+    fetch_trades_details_by_client_id: {
+        [Segments.QUERY]: Joi.object().keys({
+            client_id: Joi.number().integer().required(),
+        }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
+    },
+
     fetch_logs_by_clients: {
         [Segments.QUERY]: Joi.object().keys({
             client_id: Joi.number().integer().required(),
