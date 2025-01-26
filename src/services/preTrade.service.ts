@@ -14,10 +14,10 @@ const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 const fetch_all_clients_trades = async (req: any) => {
     try {
-        const clients = await clientTradeModel.fetchAllClientsTrades(1,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await clientTradeModel.fetchAllClientsTradesCount(1,req.body.filterData,req.body.query || "");
-        const client_statistics = await clientTradeModel.fetch_all_clients_proofs_statistics(1,req.body.filterData,req.body.query || "");
-        const organization_statistics = await clientTradeModel.fetch_all_organization_proofs_statistics(1,req.body.filterData,req.body.query || "");
+        const clients = await clientTradeModel.fetchAllClientsTradesByOrganization(1,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await clientTradeModel.fetchAllClientsTradesCountByOrganization(1,req.body.filterData,req.body.query || "");
+        const client_statistics = await clientTradeModel.fetchAllClientsProofsStatistics(1,req.body.filterData,req.body.query || "");
+        const organization_statistics = await clientTradeModel.fetchAllOrganizationProofsStatistics(1,req.body.filterData,req.body.query || "");
 
         console.log(organization_statistics)
         clients.forEach((client:any) => {

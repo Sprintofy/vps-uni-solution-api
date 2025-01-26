@@ -7,7 +7,7 @@ class ClientTradeModel extends BaseModel {
         super();
     }
 
-    async fetchAllClientsTrades(organization_id:number,filter_data:any,search_text:any,limit:any,offset:any,sort:any) {
+    async fetchAllClientsTradesByOrganization(organization_id:number,filter_data:any,search_text:any,limit:any,offset:any,sort:any) {
         let parameters=[];
         parameters.push(organization_id)
         let query =`SELECT DISTINCT c.client_id,c.organization_id,c.client_code,c.client_name,
@@ -21,7 +21,7 @@ class ClientTradeModel extends BaseModel {
 
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
-        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND c.client_name LIKE ? ", parameters.push('%' + search_text + '%')):""
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? || c.client_code LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
 
@@ -34,7 +34,7 @@ class ClientTradeModel extends BaseModel {
         return await this._executeQuery(query, parameters)
     }
 
-    async fetchAllClientsTradesCount(organization_id:number ,filter_data:any,search_text:any) {
+    async fetchAllClientsTradesCountByOrganization(organization_id:number ,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(organization_id)
         let query =`SELECT COUNT(DISTINCT c.client_id) as total
@@ -47,12 +47,12 @@ class ClientTradeModel extends BaseModel {
 
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
-        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? || c.client_code LIKE ? )  ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
         return await this._executeQuery(query, parameters)
     }
 
-    async fetch_all_clients_proofs_statistics(organization_id:number,filter_data:any,search_text:any) {
+    async fetchAllClientsProofsStatistics(organization_id:number,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(organization_id)
         let query =`SELECT 
@@ -64,16 +64,17 @@ class ClientTradeModel extends BaseModel {
                 FROM pre_trades pt
                 LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pt.organization_id = ?`;
-        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
-        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+        // filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+        // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 
         query+=` GROUP BY pt.client_id `;
 
         return await this._executeQuery(query, parameters)
     }
 
-    async fetch_all_organization_proofs_statistics(organization_id:number,filter_data:any,search_text:any) {
+    async fetchAllOrganizationProofsStatistics(organization_id:number,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(organization_id)
         let query =`SELECT 
@@ -84,9 +85,10 @@ class ClientTradeModel extends BaseModel {
                 FROM pre_trades pt
                 LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pt.organization_id = ?`;
-        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
-        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+        // filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+       // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 
         query+=` GROUP BY pt.organization_id `;
 

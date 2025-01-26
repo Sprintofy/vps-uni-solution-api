@@ -11,7 +11,7 @@ class TradeProofsModel extends BaseModel {
         let parameters=[];
         parameters.push(client_id)
         let query =`SELECT pft.pre_trade_proof_id, pft.client_id, pft.client_code,pft.organization_id, 
-                pft.is_email_sent, pft.is_email_received, pft.email_url, pft.email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url)as pdf_url, 
+                pft.is_email_sent, pft.is_email_received, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url) as email_url, pft.email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url)as pdf_url, 
                 pft.email_response, pft.status, pft.created_by, pft.updated_by,DATE_FORMAT(pft.created_date, '%Y-%m-%d') as created_date  , pft.updated_date,
                 IFNULL(
                         JSON_EXTRACT(
@@ -36,8 +36,11 @@ class TradeProofsModel extends BaseModel {
 
         search_text !== undefined && search_text !== null && search_text !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
-        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
         query += " GROUP BY pft.pre_trade_proof_id ";
+
+        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
+
+
         query += " LIMIT ? OFFSET ? ;";
 
         parameters.push(limit, offset);
