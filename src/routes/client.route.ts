@@ -9,7 +9,7 @@ router.post('/import-clients', clientController.import_clients);
 
 router.post('/save-client', clientController.save_client_info);
 
-router.post('/fetch-all', celebrate(clientSchema.fetch_active_clients),clientController.fetch_all_clients_with_pagination);
+router.post('/fetch-all', celebrate(clientSchema.fetch_all_clients),clientController.fetch_all_clients_with_pagination);
 
 router.get('/fetch-all',celebrate(clientSchema.fetch_active_clients), clientController.fetch_all_clients);
 
