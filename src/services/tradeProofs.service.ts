@@ -133,6 +133,8 @@ const download_all_pdf = async (req: any) => {
 
         const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
         const uploadDir = path.join(__dirname, '../../../public/upload');
+        console.log("uploadDir path ",path)
+        console.log("uploadDir",uploadDir)
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
         // Ensure the upload directory exists
