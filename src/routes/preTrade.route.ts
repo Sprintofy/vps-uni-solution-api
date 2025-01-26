@@ -5,6 +5,7 @@ import {celebrate} from 'celebrate';
 import clientTradeSchema from "./schemas/preTrade.schema";
 import clientTradeController from "../controllers/preTrade.controller";
 
+// todo file validation
 router.post('/import-trades', clientTradeController.import_trades);
 
 router.post('/fetch-all',celebrate(clientTradeSchema.fetch_all_clients_trades), clientTradeController.fetch_all_clients_trades);
