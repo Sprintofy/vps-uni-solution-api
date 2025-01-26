@@ -7,12 +7,12 @@ import moment from "moment/moment";
 import emailService from "../utilities/email.service";
 const awsS3BucketService = require("../utilities/awsS3Bucket.service");
 import organizationConfigModel from '../../models/organizationConfig.model'
+import fileService from "./file.service";
 const phantomPath = path.resolve(__dirname, '../../../../node_modules/phantomjs-prebuilt/bin/phantomjs');
 
 const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
 
-    console.log("organizations_config", organizations_config)
     let emailBody = `<!DOCTYPE html>
                 <html>
                 <head>
@@ -232,52 +232,11 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
      await browser.close();
      // await generatePdfFile(htmlContent, file_path);
 
-    const aws_s3_url = await uploadTemplateFileToS3(organization_id,{file_name,file_path})
-
-    console.log("aws_s3_url",aws_s3_url)
+    const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id,{file_name,file_path})
 
     fs.unlinkSync(file_path);
     return aws_s3_url;
 }
-
-// const generatePdfFile = async (htmlContent: string, filePath: string): Promise<boolean> => {
-//     try {
-//         const doc = new htmlToPdf();
-//         doc.text(htmlContent, 10, 10);
-//         doc.save(filePath);
-//         console.log('PDF generated successfully');
-//         return true;
-//     } catch (error) {
-//         console.error(`Error processing form or PDF file: ${(error as Error).message}`);
-//         return false;
-//     }
-// };
-
-const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
-    try {
-
-        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+1;
-
-        // Check if "folder" exists on S3 by listing objects with a specific prefix
-        const isFolderExists = await awsS3BucketService.isFolderExists(s3FolderPath);
-
-        // Create "folder" (simulate directory) if it doesn't exist
-        if (!isFolderExists) {
-            const createFolder = await awsS3BucketService.createFolder(s3FolderPath);
-        }
-
-        // Upload the file to the specified "folder" in S3
-        const fileStream = fs.createReadStream(body.file_path);
-
-        const result = await awsS3BucketService.uploadFile(fileStream, s3FolderPath, body.file_name);
-
-        return result.key;
-
-    } catch (error:any) {
-        console.error(`Error processing form or uploading file: ${error.message}`);
-        throw error;
-    }
-};
 
 const readPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
 

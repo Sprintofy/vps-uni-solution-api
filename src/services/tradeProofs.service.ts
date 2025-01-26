@@ -107,9 +107,7 @@ const download_all_pdf = async (req: any) => {
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
         // Ensure the upload directory exists
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
         // Fetch all trade proof URLs
         const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1);
@@ -148,12 +146,8 @@ const download_all_pdf = async (req: any) => {
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
 
-        // const fileContent = fs.createReadStream(zip_file_path);
-
-        const results = await fileService.uploadZipFileToS3Bucket({file_name:zip_file_name,file_path:zip_file_path});
-
-        // Upload ZIP file to S3
-        // const zipFileUrl = await awsS3BucketService.uploadFile(fileContent, 'zipped', zip_file_name);
+        // upload Zip File S3
+        const results = await fileService.uploadZipFileToS3Bucket(1,{file_name:zip_file_name,file_path:zip_file_path});
 
         // Cleanup local files
         downloadedFiles.forEach((file) => {
@@ -162,8 +156,8 @@ const download_all_pdf = async (req: any) => {
             }
         });
 
-        if (fs.existsSync(zip_file_path)) {
-        }
+        // Cleanup local zip file
+        if (fs.existsSync(zip_file_path)) fs.unlinkSync(zip_file_path);
 
         return results;
     } catch (error: any) {
