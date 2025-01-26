@@ -17,10 +17,10 @@ const fetch_all_clients_proofs = async (req: any) => {
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id)
 
         return {
-            total_trade_count: statistics[0].total_trade_count,
-            total_pdf_generated_count: parseInt(statistics[0].total_pdf_generated_count),
-            total_email_sent:parseInt(statistics[0].total_email_sent),
-            total_email_received: parseInt(statistics[0].total_email_received),
+            total_trade_count: statistics[0].total_trade_count || 0,
+            total_pdf_generated_count: parseInt(statistics[0].total_pdf_generated_count) || 0,
+            total_email_sent:parseInt(statistics[0].total_email_sent) || 0,
+            total_email_received: parseInt(statistics[0].total_email_received) || 0,
             data:clients,
             total:total[0].total
         }
@@ -100,64 +100,71 @@ const download_all_email = async (req:any) => {
     }
 };
 
-const download_all_pdf = async (req: any) => {
+export const download_all_pdf = async (req: any): Promise<string> => {
     try {
-        const file_name = `trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
-        const uploadDir = path.join(__dirname, '/uploads');
-        const zipFilePath = path.join(uploadDir, file_name);
 
-        // Create temporary reports directory if it doesn't exist
+        const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
+
+        const uploadDir = path.join(__dirname, '/uploads');
+
+        const zip_file_path = path.join(uploadDir, zip_file_name);
+
+        // Ensure the upload directory exists
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
 
-        const keys = await tradeProofsModel.fetch_all_trade_proof_urls()
-
-        // const keys: any[] = [
-        //     {
-        //         pdf_url: 'https://uni-solution-api.sprintofy.com/proofs/organization_1/PRB3134_trade_info_22_01_2025_17-07-15.pdf',
-        //         pre_trade_proof_id: 1,
-        //         client_code: 'PRB3134',
-        //         created_date: '2024-12-12',
-        //     },
-        // ];
+        // Fetch all trade proof URLs
+        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls();
 
         const downloadedFiles: string[] = [];
 
         // Download each file
-        for (const key of keys) {
-            const fileName = `${key.pre_trade_proof_id}_${key.client_code}_${key.created_date}.pdf`;
+        for (const pdf of all_pdfs) {
+
+            const fileName = `${pdf.pre_trade_proof_id}_${pdf.client_code}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
+
             const localFilePath = path.join(uploadDir, fileName);
 
-            const response :any = await axios({
-                url: key.pdf_url,
-                method: 'GET',
-                responseType: 'stream',
-            });
+            try {
+                const response = await axios({
+                    url: pdf.pdf_url,
+                    method: 'GET',
+                    responseType: 'stream',
+                }) as any;
 
-            const writer = fs.createWriteStream(localFilePath);
-            response.data.pipe(writer);
+                const writer = fs.createWriteStream(localFilePath);
+                response.data.pipe(writer);
 
-            await new Promise((resolve, reject) => {
-                writer.on('finish', resolve);
-                writer.on('error', reject);
-            });
+                await new Promise<void>((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
 
-            downloadedFiles.push(localFilePath);
+                downloadedFiles.push(localFilePath);
+
+            } catch (downloadError:any) {
+                console.error(`Failed to download file from ${pdf.pdf_url}: ${downloadError.message}`);
+            }
         }
 
-        // Create a zip file
-        await fileService.createZipFile(downloadedFiles, zipFilePath);
+        // Create a ZIP file
+        await fileService.createZipFile(downloadedFiles, zip_file_path);
 
-        const fileContent = fs.createReadStream(zipFilePath);
+        const fileContent = fs.createReadStream(zip_file_path);
 
-
-        // Upload zip file to S3
-        const zipFileUrl = await awsS3BucketService.uploadFile(fileContent, 'zipped', file_name);
+        // Upload ZIP file to S3
+        const zipFileUrl = await awsS3BucketService.uploadFile(fileContent, 'zipped', zip_file_name);
 
         // Cleanup local files
-        downloadedFiles.forEach((file) => fs.unlinkSync(file));
-        fs.unlinkSync(zipFilePath);
+        downloadedFiles.forEach((file) => {
+            if (fs.existsSync(file)) {
+                fs.unlinkSync(file);
+            }
+        });
+
+        if (fs.existsSync(zip_file_path)) {
+        }
 
         return zipFileUrl.Location;
     } catch (error: any) {

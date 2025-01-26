@@ -32,16 +32,16 @@ class TradeProofsModel extends BaseModel {
                     ) AS include_stocks
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
-                WHERE pt.client_id =  ? GROUP BY pft.pre_trade_proof_id`;
+                WHERE pt.client_id =  ? `;
+        searchText !== undefined && searchText !== null && searchText !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + searchText + '%','%' + searchText + '%')):""
 
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND c.client_name LIKE ? ", parameters.push('%' + searchText + '%')):""
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
-
+        query += " GROUP BY pft.pre_trade_proof_id ";
         query += " LIMIT ? OFFSET ? ;";
 
         parameters.push(limit, offset);
 
-
+       console.log(query)
         return await this._executeQuery(query, parameters)
     }
 
@@ -52,7 +52,7 @@ class TradeProofsModel extends BaseModel {
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pt.client_id =  ? `
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + searchText + '%')):""
+        searchText !== undefined && searchText !== null && searchText !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + searchText + '%','%' + searchText + '%')):""
         return await this._executeQuery(query, parameters)
     }
 
