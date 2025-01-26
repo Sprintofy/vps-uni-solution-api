@@ -63,38 +63,67 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
 
 const download_all_email = async (req:any) => {
     try {
-        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-        const uploadDir = path.join(__dirname, '/uploads');
-        const zipFilePath = path.join(uploadDir, file_name);
 
-        // Create temp directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
+        const uploadDir = path.join(__dirname, '/uploads');
+        const zip_file_path = path.join(uploadDir, zip_file_name);
+
+        // Ensure the upload directory exists
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+        // Fetch all trade proof URLs
+        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1);
 
         const downloadedFiles: string[] = [];
 
-        // Download each file from S3
-        // for (const key of keys) {
-        //     const localFilePath = path.join(uploadDir, path.basename(key));
-        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
-        //     downloadedFiles.push(localFilePath);
-        // }
+        // Download each file
+        for (const pdf of all_pdfs) {
 
-        // Create a zip file
-        await fileService.createZipFile(downloadedFiles, zipFilePath);
+            const fileName = `${pdf.pre_trade_proof_id}_${pdf.client_code}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
 
-        // Upload the zip file back to S3
-        const uploadedZipKey = `zipped/${file_name}`;
-        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
+            const localFilePath = path.join(uploadDir, fileName);
+
+            try {
+                const response = await axios({
+                    url: pdf.pdf_url,
+                    method: 'GET',
+                    responseType: 'stream',
+                }) as any;
+
+                const writer = fs.createWriteStream(localFilePath);
+                response.data.pipe(writer);
+
+                await new Promise<void>((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
+
+                downloadedFiles.push(localFilePath);
+
+            } catch (downloadError:any) {
+                console.error(`Failed to download file from ${pdf.pdf_url}: ${downloadError.message}`);
+            }
+        }
+
+        // Create a ZIP file
+        await fileService.createZipFile(downloadedFiles, zip_file_path);
+
+        // upload Zip File S3
+        const results = await fileService.uploadZipFileToS3Bucket(1,{file_name:zip_file_name,file_path:zip_file_path});
 
         // Cleanup local files
-        downloadedFiles.forEach((file) => fs.unlinkSync(file));
-        fs.unlinkSync(zipFilePath);
+        downloadedFiles.forEach((file) => {
+            if (fs.existsSync(file)) {
+                fs.unlinkSync(file);
+            }
+        });
 
-        return zipFileUrl;
+        // Cleanup local zip file
+        if (fs.existsSync(zip_file_path)) fs.unlinkSync(zip_file_path);
+
+        return results;
     } catch (error: any) {
-        console.error(`Error processing files: ${error.message}`);
+        console.error(`Error download all email: ${error.message}`);
         throw error;
     }
 };
@@ -161,7 +190,7 @@ const download_all_pdf = async (req: any) => {
 
         return results;
     } catch (error: any) {
-        console.error(`Error processing files: ${error.message}`);
+        console.error(`Error processing download all pdf files: ${error.message}`);
         throw error;
     }
 };
@@ -169,124 +198,140 @@ const download_all_pdf = async (req: any) => {
 const download_all_pdf_by_client = async (req:any) => {
     try {
 
-        console.log("in file download", req.query)
-        if(!req.query.client_id){
-            throw new Error(`Client Id is required`)
-        }
+        const client_info = await clientModel.fetch_client_info_by_id(req.query.client_id);
 
-
-        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const zip_file_name = `${client_info[0].client_code}_pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
         const uploadDir = path.join(__dirname, '/uploads');
-        const zipFilePath = path.join(uploadDir, file_name);
+        const zip_file_path = path.join(uploadDir, zip_file_name);
 
-        // Create temp directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        // Ensure the upload directory exists
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-        const keys = await tradeProofsModel.fetch_all_trade_proof_urls_by_client_id(req.query.client_id)
-
-
-        if(keys.length === 0){
-            throw new Error(`No files found for client id: ${req.query.client_id}`)
-        }
-
-        console.log("url",keys)
+        // Fetch all trade proof URLs
+        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls_by_client_id(req.query.client_id);
 
         const downloadedFiles: string[] = [];
 
         // Download each file
-        for (const key of keys) {
-            const fileName = `${key.pre_trade_proof_id}_${key.client_code}_${key.created_date}.pdf`;
+        for (const pdf of all_pdfs) {
+
+            const fileName = `${pdf.pre_trade_proof_id}_${pdf.client_code}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
+
             const localFilePath = path.join(uploadDir, fileName);
 
-            const response :any = await axios({
-                url: key.pdf_url,
-                method: 'GET',
-                responseType: 'stream',
-            });
+            try {
+                const response = await axios({
+                    url: pdf.pdf_url,
+                    method: 'GET',
+                    responseType: 'stream',
+                }) as any;
 
-            const writer = fs.createWriteStream(localFilePath);
-            response.data.pipe(writer);
+                const writer = fs.createWriteStream(localFilePath);
+                response.data.pipe(writer);
 
+                await new Promise<void>((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
 
+                downloadedFiles.push(localFilePath);
 
-            await new Promise((resolve, reject) => {
-                writer.on('finish', resolve);
-                writer.on('error', reject);
-            });
-            console.log("url 5 ")
-
-
-            downloadedFiles.push(localFilePath);
+            } catch (downloadError:any) {
+                console.error(`Failed to download file from ${pdf.pdf_url}: ${downloadError.message}`);
+            }
         }
-        console.log("url 6",keys)
 
+        // Create a ZIP file
+        await fileService.createZipFile(downloadedFiles, zip_file_path);
 
-        // Create a zip file
-        await fileService.createZipFile(downloadedFiles, zipFilePath);
-
-        console.log("url 7")
-
-        const fileContent = fs.createReadStream(zipFilePath);
-
-
-        // Upload zip file to S3
-        const zipFileUrl = await awsS3BucketService.uploadFile(fileContent, 'zipped', file_name);
-
-        console.log("url 8",zipFileUrl)
+        // upload Zip File S3
+        const results = await fileService.uploadZipFileToS3Bucket(1,{file_name:zip_file_name,file_path:zip_file_path});
 
         // Cleanup local files
-        downloadedFiles.forEach((file) => fs.unlinkSync(file));
-        fs.unlinkSync(zipFilePath);
+        downloadedFiles.forEach((file) => {
+            if (fs.existsSync(file)) {
+                fs.unlinkSync(file);
+            }
+        });
 
-        console.log("url 9",zipFileUrl)
+        // Cleanup local zip file
+        if (fs.existsSync(zip_file_path)) fs.unlinkSync(zip_file_path);
 
-        return zipFileUrl.Location;
+        return results;
     } catch (error: any) {
-        console.error(`Error processing files: ${error.message}`);
+        console.error(`Error processing download all pdf by client files: ${error.message}`);
         throw error;
     }
 };
 
 const download_all_email_by_client = async (req:any) => {
     try {
-        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-        const uploadDir = path.join(__dirname, '../../../public/reports');
-        const zipFilePath = path.join(uploadDir, file_name);
 
-        // Create temp directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        const client_info = await clientModel.fetch_client_info_by_id(req.query.client_id);
+
+        const zip_file_name = `${client_info[0].client_code}_pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
+        const uploadDir = path.join(__dirname, '/uploads');
+        const zip_file_path = path.join(uploadDir, zip_file_name);
+
+        // Ensure the upload directory exists
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+        // Fetch all trade proof URLs
+        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls_by_client_id(req.query.client_id);
 
         const downloadedFiles: string[] = [];
 
-        // Download each file from S3
-        // for (const key of keys) {
-        //     const localFilePath = path.join(uploadDir, path.basename(key));
-        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
-        //     downloadedFiles.push(localFilePath);
-        // }
+        // Download each file
+        for (const pdf of all_pdfs) {
 
-        // Create a zip file
-        await fileService.createZipFile(downloadedFiles, zipFilePath);
+            const fileName = `${pdf.pre_trade_proof_id}_${pdf.client_code}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
 
-        // Upload the zip file back to S3
-        const uploadedZipKey = `zipped/${file_name}`;
-        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
+            const localFilePath = path.join(uploadDir, fileName);
+
+            try {
+                const response = await axios({
+                    url: pdf.pdf_url,
+                    method: 'GET',
+                    responseType: 'stream',
+                }) as any;
+
+                const writer = fs.createWriteStream(localFilePath);
+                response.data.pipe(writer);
+
+                await new Promise<void>((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
+
+                downloadedFiles.push(localFilePath);
+
+            } catch (downloadError:any) {
+                console.error(`Failed to download file from ${pdf.pdf_url}: ${downloadError.message}`);
+            }
+        }
+
+        // Create a ZIP file
+        await fileService.createZipFile(downloadedFiles, zip_file_path);
+
+        // upload Zip File S3
+        const results = await fileService.uploadZipFileToS3Bucket(1,{file_name:zip_file_name,file_path:zip_file_path});
 
         // Cleanup local files
-        downloadedFiles.forEach((file) => fs.unlinkSync(file));
-        fs.unlinkSync(zipFilePath);
+        downloadedFiles.forEach((file) => {
+            if (fs.existsSync(file)) {
+                fs.unlinkSync(file);
+            }
+        });
 
-        return zipFileUrl;
+        // Cleanup local zip file
+        if (fs.existsSync(zip_file_path)) fs.unlinkSync(zip_file_path);
+
+        return results;
     } catch (error: any) {
-        console.error(`Error processing files: ${error.message}`);
+        console.error(`Error processing download all email by client files: ${error}`);
         throw error;
     }
 };
-
 
 
 /*************** MYSQL CURD Operation *************/

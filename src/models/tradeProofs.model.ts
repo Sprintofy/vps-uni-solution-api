@@ -182,9 +182,8 @@ class TradeProofsModel extends BaseModel {
 
 
     async fetch_all_trade_proof_urls_by_client_id(client_id:number) {
-        const query = `select 
-        pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url    
-        FROM pre_trade_proofs where client_id = ?`;
+        const query = `SELECT pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url    
+        FROM pre_trade_proofs WHERE client_id = ?`;
         return await this._executeQuery(query, [client_id]);
     }
 
