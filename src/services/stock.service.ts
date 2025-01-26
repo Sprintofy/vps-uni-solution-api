@@ -30,8 +30,8 @@ const fetch_active_stock = async (req: any) => {
             exchange_code_drop_down: [
                 { id: 1, value: "NSE", label: "NSE" },
                 { id: 2, value: "BSE", label: "BSE" },
-                { id: 3, value: "BSE", label: "NSE FO" },
-                { id: 4, value: "BSE", label: "MCX" }
+                { id: 3, value: "NSE FO", label: "NSE FO" },
+                { id: 4, value: "MCX", label: "MCX" }
             ],
             order_type_drop_down: [
                 { id: 1, value: "L", label: "L" },

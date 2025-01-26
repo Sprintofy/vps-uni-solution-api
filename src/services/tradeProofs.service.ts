@@ -100,13 +100,11 @@ const download_all_email = async (req:any) => {
     }
 };
 
-export const download_all_pdf = async (req: any): Promise<string> => {
+const download_all_pdf = async (req: any) => {
     try {
 
         const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
-
         const uploadDir = path.join(__dirname, '/uploads');
-
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
         // Ensure the upload directory exists
@@ -172,6 +170,33 @@ export const download_all_pdf = async (req: any): Promise<string> => {
         throw error;
     }
 };
+
+const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
+    try {
+
+        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+1;
+
+        // Check if "folder" exists on S3 by listing objects with a specific prefix
+        const isFolderExists = await awsS3BucketService.isFolderExists(s3FolderPath);
+
+        // Create "folder" (simulate directory) if it doesn't exist
+        if (!isFolderExists) {
+            const createFolder = await awsS3BucketService.createFolder(s3FolderPath);
+        }
+
+        // Upload the file to the specified "folder" in S3
+        const fileStream = fs.createReadStream(body.file_path);
+
+        const result = await awsS3BucketService.uploadFile(fileStream, s3FolderPath, body.file_name);
+
+        return result.key;
+
+    } catch (error:any) {
+        console.error(`Error processing form or uploading file: ${error.message}`);
+        throw error;
+    }
+};
+
 
 const download_zip_file = async (req:any) => {
     try {
