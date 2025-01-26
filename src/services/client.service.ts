@@ -9,8 +9,8 @@ import {error} from "winston";
 
 const fetch_all_clients_with_pagination = async (req: any) => {
     try {
-        const clients = await clientModel.fetch_all_clients_with_pagination(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await clientModel.fetch_all_clients_count(1,req.body.query || "");
+        const clients = await clientModel.fetch_all_clients_with_pagination(req.body.organization_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await clientModel.fetch_all_clients_count(req.body.organization_id,req.body.query || "");
         return {
             data:clients,
             total:total[0].total
@@ -23,7 +23,7 @@ const fetch_all_clients_with_pagination = async (req: any) => {
 
 const fetch_all_clients = async (req: any) => {
     try {
-        const clients = await clientModel.fetch_all_clients(1);
+        const clients = await clientModel.fetch_all_clients(req.query.organization_id);
         return clients
     } catch (error: any) {
         console.error("Error importing clients:", error.message);
