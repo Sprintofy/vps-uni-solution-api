@@ -7,7 +7,7 @@ class TradeProofsModel extends BaseModel {
         super();
     }
 
-    async fetch_all_clients_proofs(client_id:number,searchText:any,limit:any,offset:any,sort:any) {
+    async fetch_all_clients_proofs(client_id:number,filter_data:any,search_text:any,limit:any,offset:any,sort:any) {
         let parameters=[];
         parameters.push(client_id)
         let query =`SELECT pft.pre_trade_proof_id, pft.client_id, pft.client_code,pft.organization_id, 
@@ -32,42 +32,51 @@ class TradeProofsModel extends BaseModel {
                     ) AS include_stocks
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
-                WHERE pt.client_id =  ? `;
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + searchText + '%','%' + searchText + '%')):""
+                WHERE pft.client_id =  ? `;
+
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
         query += " GROUP BY pft.pre_trade_proof_id ";
         query += " LIMIT ? OFFSET ? ;";
 
         parameters.push(limit, offset);
-
-       console.log(query)
+        console.log(query)
         return await this._executeQuery(query, parameters)
     }
 
-    async fetch_all_clients_proofs_count(client_id:number ,searchText:any) {
+    async fetch_all_clients_proofs_count(client_id:number ,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(client_id)
         let query =`SELECT COUNT(DISTINCT pft.pre_trade_proof_id) as total
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pt.client_id =  ? `
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + searchText + '%','%' + searchText + '%')):""
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
+
         return await this._executeQuery(query, parameters)
     }
 
-    async fetch_all_clients_proofs_statistics(client_id:number) {
+    async fetch_all_clients_proofs_statistics(client_id:number,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(client_id)
         let query =`SELECT 
-                COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
+                pft.client_id,
+                pt.total_trade_count,
                 SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
                 SUM(CASE WHEN  pft.is_email_received = 1 THEN 1 ELSE 0 END )  as total_email_received,
                 SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
                 FROM pre_trade_proofs pft
-                LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
-                WHERE pt.client_id =  ?
-                GROUP BY pt.client_id `;
+                LEFT JOIN ( SELECT COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,pt.client_id
+                            FROM pre_trades pt
+                            WHERE pt.client_id = ${client_id}
+                            GROUP BY pt.client_code
+                          ) pt ON pt.client_id = pft.client_id
+                WHERE pft.client_id =  ?
+                GROUP BY pft.client_id,pt.total_trade_count `;
+
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
+
         return await this._executeQuery(query, parameters)
     }
 

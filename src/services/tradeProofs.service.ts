@@ -12,10 +12,9 @@ const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 const fetch_all_clients_proofs = async (req: any) => {
     try {
-        const clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await tradeProofsModel.fetch_all_clients_proofs_count(req.body.client_id,req.body.query || "");
-        const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id)
-
+        const clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await tradeProofsModel.fetch_all_clients_proofs_count(req.body.client_id,req.body.filterData,req.body.query || "");
+        const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query || "")
         return {
             total_trade_count: statistics[0].total_trade_count || 0,
             total_pdf_generated_count: parseInt(statistics[0].total_pdf_generated_count) || 0,
@@ -48,7 +47,7 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
     try {
         const clients = await tradeProofsModel.fetch_trade_by_client(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_trade_by_client_count(req.body.client_id,req.body.query || "");
-        const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id)
+        const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query)
         return {
             total_trade_count: statistics[0].total_trade_count,
             total_pdf_generated_count: parseInt(statistics[0].total_pdf_generated_count),
