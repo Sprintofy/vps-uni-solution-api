@@ -83,12 +83,12 @@ class TradeProofsModel extends BaseModel {
 
     /***************** Pre Trades  *********************/
 
-    async fetch_trade_by_client(client_id:number,searchText:any,limit:any,offset:any,sort:any) {
+    async fetch_trade_by_client(client_id:number,filter_data:any,searchText:any,limit:any,offset:any,sort:any) {
         const query = `SELECT * FROM pre_trades WHERE client_id = ? `;
         return await this._executeQuery(query, [client_id]);
     }
 
-    async fetch_trade_by_client_count(client_id:number ,searchText:any) {
+    async fetch_trade_by_client_count(client_id:number ,filter_data:any,searchText:any) {
         const query = `SELECT COUNT(*) FROM pre_trades WHERE client_id = ? `;
         return await this._executeQuery(query, [client_id]);
     }
@@ -173,10 +173,10 @@ class TradeProofsModel extends BaseModel {
     }
 
 
-    async fetch_all_trade_proof_urls() {
+    async fetch_all_trade_proof_urls(organization_id:number) {
         const query = `SELECT pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url    
-        FROM pre_trade_proofs`;
-        return await this._executeQuery(query, []);
+        FROM pre_trade_proofs WHERE organization_id = ? `;
+        return await this._executeQuery(query, [organization_id]);
     }
 
 

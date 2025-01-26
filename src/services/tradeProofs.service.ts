@@ -45,11 +45,11 @@ const fetch_all_clients_trades_logs = async (req: any) => {
 
 const fetch_trades_details_by_client_id = async(req:any)=> {
     try {
-        const clients = await tradeProofsModel.fetch_trade_by_client(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await tradeProofsModel.fetch_trade_by_client_count(req.body.client_id,req.body.query || "");
+        const clients = await tradeProofsModel.fetch_trade_by_client(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await tradeProofsModel.fetch_trade_by_client_count(req.body.client_id,req.body.filterData,req.body.query || "");
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query)
         return {
-            total_trade_count: statistics[0].total_trade_count,
+            total_trade_count:total[0].total,
             total_pdf_generated_count: parseInt(statistics[0].total_pdf_generated_count),
             total_email_sent:parseInt(statistics[0].total_email_sent),
             total_email_received: parseInt(statistics[0].total_email_received),
@@ -112,7 +112,7 @@ const download_all_pdf = async (req: any) => {
         }
 
         // Fetch all trade proof URLs
-        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls();
+        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1);
 
         const downloadedFiles: string[] = [];
 
@@ -148,10 +148,12 @@ const download_all_pdf = async (req: any) => {
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
 
-        const fileContent = fs.createReadStream(zip_file_path);
+        // const fileContent = fs.createReadStream(zip_file_path);
+
+        const results = await fileService.uploadZipFileToS3Bucket({file_name:zip_file_name,file_path:zip_file_path});
 
         // Upload ZIP file to S3
-        const zipFileUrl = await awsS3BucketService.uploadFile(fileContent, 'zipped', zip_file_name);
+        // const zipFileUrl = await awsS3BucketService.uploadFile(fileContent, 'zipped', zip_file_name);
 
         // Cleanup local files
         downloadedFiles.forEach((file) => {
@@ -163,7 +165,7 @@ const download_all_pdf = async (req: any) => {
         if (fs.existsSync(zip_file_path)) {
         }
 
-        return zipFileUrl.Location;
+        return results;
     } catch (error: any) {
         console.error(`Error processing files: ${error.message}`);
         throw error;
@@ -419,8 +421,8 @@ export default {
     fetch_all_clients_proofs:fetch_all_clients_proofs,
     fetch_trades_details_by_client_id:fetch_trades_details_by_client_id,
     fetch_all_clients_trades_logs:fetch_all_clients_trades_logs,
-    download_all_email: download_all_email,
     download_all_pdf: download_all_pdf,
+    download_all_email: download_all_email,
     download_all_pdf_by_client: download_all_pdf_by_client,
     download_all_email_by_client: download_all_email_by_client
 }

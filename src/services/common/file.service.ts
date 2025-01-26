@@ -126,12 +126,12 @@ const deleteFile = async (filePath: string): Promise<void> => {
     });
 };
 
-const uploadFileToS3Bucket = async (body: any) => {
+const uploadZipFileToS3Bucket = async (body: any) => {
     try {
         // Process the form to get the image information
 
-        const filePath = body.filepath;
-        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + body.organization_id ;
+        const filePath = body.file_path;
+        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+1+'/zipped' ;
 
         // Check if "folder" exists on S3 by listing objects with a specific prefix
         const isFolderExists = await awsS3Bucket.isFolderExists(s3FolderPath);
@@ -153,7 +153,7 @@ const uploadFileToS3Bucket = async (body: any) => {
     }
 };
 
-const createZipFile = (files: string[], file_path: string) => {
+const createZipFile = async (files: string[], file_path: string) => {
     return new Promise<void>((resolve, reject) => {
         const output = fs.createWriteStream(file_path);
         const archive = archiver('zip', { zlib: { level: 9 } });
@@ -177,5 +177,6 @@ export default {
     parseExcelFile,
     deleteFile,
     createOutputFile,
-    createZipFile:createZipFile
+    createZipFile:createZipFile,
+    uploadZipFileToS3Bucket:uploadZipFileToS3Bucket
 };

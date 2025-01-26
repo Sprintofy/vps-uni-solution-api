@@ -31,6 +31,7 @@ const fetch_all_clients_trades: IController = async (req: any, res: any) => {
         }
     }
 }
+
 const fetch_all_clients_trades_logs: IController = async (req: any, res: any) => {
     try {
         let result = await clientTradeService.fetch_all_clients_trades_logs(req);
@@ -70,67 +71,11 @@ const save_trades_by_client: IController = async (req: any, res: any) => {
     }
 }
 
-const download_all_pdf: IController = async (req: any, res: any) => {
-    try {
-        const results = await clientTradeService.download_all_pdf(req)
-        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
-    } catch (error: any) {
-        if (error instanceof Error) {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
-        } else {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
-        }
-    }
-}
-
-const download_all_email: IController = async (req: any, res: any) => {
-    try {
-        const results = await clientTradeService.download_all_email(req)
-        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
-    } catch (error: any) {
-        if (error instanceof Error) {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
-        } else {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
-        }
-    }
-}
-
-const download_all_pdf_by_client: IController = async (req: any, res: any) => {
-    try {
-        let results = await clientTradeService.download_all_pdf_by_client(req);
-        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
-    } catch (error: any) {
-        if (error instanceof Error) {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
-        } else {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
-        }
-    }
-}
-
-const download_all_email_by_client: IController = async (req: any, res: any) => {
-    try {
-        let results = await clientTradeService.download_all_email_by_client(req);
-        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
-    } catch (error: any) {
-        if (error instanceof Error) {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
-        } else {
-            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
-        }
-    }
-}
-
 
 export default {
     import_trades: import_trades,
     fetch_all_clients_trades: fetch_all_clients_trades,
     fetch_trades_details_by_client_id: fetch_trades_details_by_client_id,
-    save_trades_by_client: save_trades_by_client,
-    download_all_pdf: download_all_pdf,
-    download_all_email:download_all_email,
     fetch_all_clients_trades_logs: fetch_all_clients_trades_logs,
-    download_all_pdf_by_client: download_all_pdf_by_client,
-    download_all_email_by_client:download_all_email_by_client
+    save_trades_by_client: save_trades_by_client,
 }

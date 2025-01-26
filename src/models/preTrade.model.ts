@@ -111,8 +111,8 @@ class ClientTradeModel extends BaseModel {
     }
 
 
-    async fetch_trade_by_client(client_id: number) {
-        const query = `SELECT * FROM pre_trades WHERE client_id = ? `;
+    async fetch_trade_proof_details(client_id: number) {
+        const query = `SELECT * FROM pre_trades WHERE pre_proof_id = ? `;
         return await this._executeQuery(query, [client_id]);
     }
 
