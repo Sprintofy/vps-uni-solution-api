@@ -14,14 +14,29 @@ const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 const fetch_all_clients_trades = async (req: any) => {
     try {
-        const clients = await clientTradeModel.fetchAllClientsTrades(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await clientTradeModel.fetchAllClientsTradesCount(1,req.body.query || "");
+        const clients = await clientTradeModel.fetchAllClientsTrades(1,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await clientTradeModel.fetchAllClientsTradesCount(1,req.body.filterData,req.body.query || "");
+        const client_statistics = await clientTradeModel.fetch_all_clients_proofs_statistics(1,req.body.filterData,req.body.query || "");
+        const organization_statistics = await clientTradeModel.fetch_all_organization_proofs_statistics(1,req.body.filterData,req.body.query || "");
+
+        console.log(organization_statistics)
+        clients.forEach((client:any) => {
+            const stats = client_statistics.find((stat:any) => stat.client_id === client.client_id);
+            if (stats) {
+                client.total_email_sent = stats.total_email_sent || 0;
+                client.total_email_received = stats.total_email_received || 0;
+            } else {
+                client.total_email_sent =  0;
+                client.total_email_received =  0;
+            }
+        });
         return {
-            total_client_count:10,
-            total_email_sent:9,
-            total_email_received:8,
+            total_client_count:organization_statistics[0].total_client_count,
+            total_email_sent:organization_statistics[0].total_email_sent,
+            total_email_received:organization_statistics[0].total_email_received,
             data:clients,
             total:total[0].total
+
         }
     } catch (error: any) {
         console.error("Error importing clients:", error.message);

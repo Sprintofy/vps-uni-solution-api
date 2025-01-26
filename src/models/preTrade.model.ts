@@ -7,37 +7,89 @@ class ClientTradeModel extends BaseModel {
         super();
     }
 
-    async fetchAllClientsTrades(organization_id:number,searchText:any,limit:any,offset:any,sort:any) {
+    async fetchAllClientsTrades(organization_id:number,filter_data:any,search_text:any,limit:any,offset:any,sort:any) {
         let parameters=[];
         parameters.push(organization_id)
         let query =`SELECT DISTINCT c.client_id,c.organization_id,c.client_code,c.client_name,
-            c.mobile,c.email,c.client_name,'10' total_email_sent,'8' total_email_received
+            c.mobile,c.email,c.client_name
             FROM pre_trades pt
             LEFT JOIN clients c ON c.client_id = pt.client_id
+            LEFT JOIN pre_trade_proofs ptp ON pt.pre_proof_id = ptp.pre_trade_proof_id
             LEFT JOIN pre_trades_info pti ON pti.pre_trade_info_id = pt.pre_trade_info_id
             LEFT JOIN pre_trades_files ptf ON ptf.pre_tades_file_id = pti.pre_tades_file_id
             WHERE pt.organization_id = ? `
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND c.client_name LIKE ? ", parameters.push('%' + searchText + '%')):""
+
+        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND c.client_name LIKE ? ", parameters.push('%' + search_text + '%')):""
+
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
 
         query += " LIMIT ? OFFSET ? ;";
 
         parameters.push(limit, offset);
 
+        console.log(query)
 
         return await this._executeQuery(query, parameters)
     }
 
-    async fetchAllClientsTradesCount(organization_id:number ,searchText:any) {
+    async fetchAllClientsTradesCount(organization_id:number ,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(organization_id)
         let query =`SELECT COUNT(DISTINCT c.client_id) as total
             FROM pre_trades pt
             LEFT JOIN clients c ON c.client_id = pt.client_id
+            LEFT JOIN pre_trade_proofs ptp ON pt.pre_proof_id = ptp.pre_trade_proof_id
             LEFT JOIN pre_trades_info pti ON pti.pre_trade_info_id = pt.pre_trade_info_id
             LEFT JOIN pre_trades_files ptf ON ptf.pre_tades_file_id = pti.pre_tades_file_id
             WHERE pt.organization_id = ? `
-        searchText !== undefined && searchText !== null && searchText !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + searchText + '%')):""
+
+        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+
+        return await this._executeQuery(query, parameters)
+    }
+
+    async fetch_all_clients_proofs_statistics(organization_id:number,filter_data:any,search_text:any) {
+        let parameters=[]
+        parameters.push(organization_id)
+        let query =`SELECT 
+                pt.client_id,
+                COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
+                SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
+                SUM(CASE WHEN  pft.is_email_received = 1 THEN 1 ELSE 0 END )  as total_email_received,
+                SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
+                FROM pre_trades pt
+                LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
+                WHERE pt.organization_id = ?`;
+        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+
+        query+=` GROUP BY pt.client_id `;
+
+        return await this._executeQuery(query, parameters)
+    }
+
+    async fetch_all_organization_proofs_statistics(organization_id:number,filter_data:any,search_text:any) {
+        let parameters=[]
+        parameters.push(organization_id)
+        let query =`SELECT 
+                COUNT(DISTINCT pt.client_id) as total_client_count,
+                SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
+                SUM(CASE WHEN  pft.is_email_received = 1 THEN 1 ELSE 0 END )  as total_email_received,
+                SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
+                FROM pre_trades pt
+                LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
+                WHERE pt.organization_id = ?`;
+        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+
+        query+=` GROUP BY pt.organization_id `;
+
         return await this._executeQuery(query, parameters)
     }
 
