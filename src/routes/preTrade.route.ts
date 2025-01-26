@@ -9,7 +9,7 @@ router.post('/import-trades', clientTradeController.import_trades);
 
 router.post('/fetch-all', clientTradeController.fetch_all_clients_trades);
 
-router.post('/fetch-all-logs', clientTradeController.fetch_all_clients_trades_logs);
+router.post('/fetch-all-logs', celebrate(clientTradeSchema.fetch_logs_by_clients),clientTradeController.fetch_all_clients_trades_logs);
 
 router.get('/trade-details', clientTradeController.fetch_trades_details_by_client_id);
 
