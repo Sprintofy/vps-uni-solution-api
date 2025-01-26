@@ -333,9 +333,7 @@ const download_all_email_by_client = async (req:any) => {
     }
 };
 
-
 /*************** MYSQL CURD Operation *************/
-
 
 // pre_trade_proofs
 const save_pre_trade_proofs = async(req:any,body:any)=> {
