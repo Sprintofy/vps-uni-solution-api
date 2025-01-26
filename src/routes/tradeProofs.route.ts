@@ -7,7 +7,7 @@ import tradeProofsController from "../controllers/tradeProofs.controller";
 
 router.post('/fetch-all-proofs',celebrate(tradeProofsSchema.pre_trade_proofs), tradeProofsController.fetch_all_clients_proofs);
 
-router.post('/fetch-all-trades', tradeProofsController.fetch_pre_trades_by_client_id);
+router.post('/fetch-all-trades',celebrate(tradeProofsSchema.pre_trade_proofs), tradeProofsController.fetch_pre_trades_by_client_id);
 
 // Download
 router.get('/download-all-pdf',celebrate(tradeProofsSchema.download_all),tradeProofsController.download_all_pdf);

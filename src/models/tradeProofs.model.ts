@@ -78,7 +78,7 @@ class TradeProofsModel extends BaseModel {
                 WHERE pft.client_id =  ?
                 GROUP BY pft.client_id,pt.total_trade_count `;
 
-        search_text !== undefined && search_text !== null && search_text !== "" ? (query+=" AND ( pt.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
+       // search_text !== undefined && search_text !== null && search_text !== "" ? (query+=" AND ( pft.client_code LIKE ? || pt.script_name LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
         return await this._executeQuery(query, parameters)
     }
