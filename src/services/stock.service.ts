@@ -24,8 +24,8 @@ const fetch_active_stock = async (req: any) => {
         const updatedResults = results.map((item: any) => ({
             ...item,
             buy_or_sell_drop_down: [
-                { id: 1, value: "B", label: "Buy" },
-                { id: 2, value: "S", label: "Sell" }
+                { id: 1, value: "B", label: "BUY" },
+                { id: 2, value: "S", label: "SELL" }
             ],
             exchange_code_drop_down: [
                 { id: 1, value: "NSE", label: "NSE" },
