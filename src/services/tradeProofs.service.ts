@@ -15,6 +15,7 @@ const fetch_all_clients_proofs = async (req: any) => {
         const clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_all_clients_proofs_count(req.body.client_id,req.body.query || "");
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id)
+
         return {
             total_trade_count: statistics[0].total_trade_count,
             total_pdf_generated_count: parseInt(statistics[0].total_pdf_generated_count),
@@ -47,11 +48,12 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
     try {
         const clients = await tradeProofsModel.fetch_trade_by_client(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_trade_by_client_count(req.body.client_id,req.body.query || "");
+        const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id)
         return {
-            total_trade_count:10,
-            total_pdf_generated_count:10,
-            total_email_sent:9,
-            total_email_received:8,
+            total_trade_count: statistics[0].total_trade_count,
+            total_pdf_generated_count: parseInt(statistics[0].total_pdf_generated_count),
+            total_email_sent:parseInt(statistics[0].total_email_sent),
+            total_email_received: parseInt(statistics[0].total_email_received),
             data:clients,
             total:total[0].total
         }
