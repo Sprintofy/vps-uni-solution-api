@@ -7,6 +7,7 @@ import archiver from 'archiver';
 import csvParse from 'csv-parse';
 import CONSTANTS from '../../common/constants/constants';
 const awsS3Bucket = require("../utilities/awsS3Bucket.service");
+import CONFIGS from "../../config";
 
 // Set up multer storage
 const storage = multer.diskStorage({
@@ -164,7 +165,7 @@ const uploadZipFileToS3Bucket = async (organization_id:any,body: any) => {
         // Upload the file to the specified "folder" in S3
         const fileStream = fs.createReadStream( body.file_path);
         const result = await awsS3Bucket.uploadFile(fileStream, s3FolderPath, body.file_name);
-        return result.key;
+        return CONFIGS.AWS.S3.BASE_URL+result.key;
     } catch (error:any) {
         console.error(`Error processing form or uploading file: ${error.message}`);
         throw error;
@@ -191,7 +192,7 @@ const uploadEmailFileToS3Bucket = async (organization_id:any,body: any) => {
         // Upload the file to the specified "folder" in S3
         const fileStream = fs.createReadStream(filePath);
         const result = await awsS3Bucket.uploadFile(fileStream, s3FolderPath, fileName);
-        return result.key;
+        return CONFIGS.AWS.S3.BASE_URL+result.key;
     } catch (error:any) {
         console.error(`Error processing form or uploading file: ${error.message}`);
         throw error;
