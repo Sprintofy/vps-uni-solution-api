@@ -172,71 +172,6 @@ const download_all_pdf = async (req: any) => {
     }
 };
 
-const uploadTemplateFileToS3 = async (organization_id:any,body: any) => {
-    try {
-
-        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+1;
-
-        // Check if "folder" exists on S3 by listing objects with a specific prefix
-        const isFolderExists = await awsS3BucketService.isFolderExists(s3FolderPath);
-
-        // Create "folder" (simulate directory) if it doesn't exist
-        if (!isFolderExists) {
-            const createFolder = await awsS3BucketService.createFolder(s3FolderPath);
-        }
-
-        // Upload the file to the specified "folder" in S3
-        const fileStream = fs.createReadStream(body.file_path);
-
-        const result = await awsS3BucketService.uploadFile(fileStream, s3FolderPath, body.file_name);
-
-        return result.key;
-
-    } catch (error:any) {
-        console.error(`Error processing form or uploading file: ${error.message}`);
-        throw error;
-    }
-};
-
-
-const download_zip_file = async (req:any) => {
-    try {
-        const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-        const uploadDir = path.join(__dirname, '../../public/reports');
-        const zipFilePath = path.join(uploadDir, file_name);
-
-        // Create temp directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        const downloadedFiles: string[] = [];
-
-        // Download each file from S3
-        // for (const key of keys) {
-        //     const localFilePath = path.join(uploadDir, path.basename(key));
-        //     await awsS3BucketService.downloadFileFromS3( key, localFilePath);
-        //     downloadedFiles.push(localFilePath);
-        // }
-
-        // Create a zip file
-        await fileService.createZipFile(downloadedFiles, zipFilePath);
-
-        // Upload the zip file back to S3
-        const uploadedZipKey = `zipped/${file_name}`;
-        const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
-
-        // Cleanup local files
-        downloadedFiles.forEach((file) => fs.unlinkSync(file));
-        fs.unlinkSync(zipFilePath);
-
-        return zipFileUrl;
-    } catch (error: any) {
-        console.error(`Error processing files: ${error.message}`);
-        throw error;
-    }
-};
-
 const download_all_pdf_by_client = async (req:any) => {
     try {
 
@@ -257,14 +192,6 @@ const download_all_pdf_by_client = async (req:any) => {
 
         const keys = await tradeProofsModel.fetch_all_trade_proof_urls_by_client_id(req.query.client_id)
 
-        // const keys: any[] = [
-        //     {
-        //         pdf_url: 'https://uni-solution-api.sprintofy.com/proofs/organization_1/PRB3134_trade_info_22_01_2025_17-07-15.pdf',
-        //         pre_trade_proof_id: 1,
-        //         client_code: 'PRB3134',
-        //         created_date: '2024-12-12',
-        //     },
-        // ];
 
         if(keys.length === 0){
             throw new Error(`No files found for client id: ${req.query.client_id}`)
