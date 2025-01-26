@@ -46,8 +46,8 @@ const fetch_all_clients_trades = async (req: any) => {
 
 const fetch_all_clients_trades_logs = async (req: any) => {
     try {
-        const clients = await clientTradeModel.fetch_all_clients_trades_logs(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
-        const total = await clientTradeModel.fetch_all_clients_trades_logs_count(1,req.body.query || "");
+        const clients = await clientTradeModel.fetch_all_clients_trades_logs(req.body.client_id,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const total = await clientTradeModel.fetch_all_clients_trades_logs_count(req.body.client_id,req.body.query || "");
         return {
             data:clients,
             total:total[0].total
