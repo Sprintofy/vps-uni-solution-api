@@ -56,6 +56,21 @@ class TradeProofsModel extends BaseModel {
         return await this._executeQuery(query, parameters)
     }
 
+    async fetch_all_clients_proofs_statistics(client_id:number) {
+        let parameters=[]
+        parameters.push(client_id)
+        let query =`SELECT 
+                COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
+                SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
+                SUM(CASE WHEN  pft.is_email_received = 1 THEN 1 ELSE 0 END )  as total_email_received,
+                SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
+                FROM pre_trade_proofs pft
+                LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
+                WHERE pt.client_id =  ?
+                GROUP BY pt.client_id `;
+        return await this._executeQuery(query, parameters)
+    }
+
 
     /***************** Pre Trades  *********************/
 
