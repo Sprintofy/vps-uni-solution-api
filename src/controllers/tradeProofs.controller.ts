@@ -4,6 +4,7 @@ import apiResponse from '../appConfigs/utilities/apiResponse';
 import IController from '../appConfigs/utilities/IController';
 import MESSAGES from '../common/messages/messages';
 import tradeProofsService from '../services/tradeProofs.service';
+import readEmailService from '../services/emailRead.service';
 const LOGGER = new (require('../appConfigs/utilities/logger').default)('roleController.ts');
 
 
@@ -98,6 +99,19 @@ const download_all_email_by_client: IController = async (req: any, res: any) => 
     }
 }
 
+const read_email: IController = async (req: any, res: any) => {
+    try {
+        let results = await readEmailService.read_email(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
+
 
 export default {
 
@@ -108,5 +122,7 @@ export default {
     download_all_pdf: download_all_pdf,
     download_all_email:download_all_email,
     download_all_pdf_by_client: download_all_pdf_by_client,
-    download_all_email_by_client:download_all_email_by_client
+    download_all_email_by_client:download_all_email_by_client,
+
+    read_email: read_email
 }

@@ -18,5 +18,6 @@ router.get('/download-all-client-email',celebrate(tradeProofsSchema.download_all
 
 router.get('/download-all-client-pdf',celebrate(tradeProofsSchema.download_all_client),tradeProofsController.download_all_pdf_by_client);
 
+router.get('/read-email',tradeProofsController.read_email);
 
 export default router;
