@@ -9,7 +9,6 @@ import fileService from "./common/file.service";
 import Imap from "imap-simple";
 import { simpleParser } from 'mailparser'; // This is optional, only if you need to parse email bodies
 
-
 const fetchImapConfig = (organization_id: any) => {
 
     // todo daynamic Organization email fetch
@@ -202,7 +201,6 @@ const read_email = async (req: any) => {
         return false;
     }
 };
-
 
 export default {
     read_email:read_email
