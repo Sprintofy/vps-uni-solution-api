@@ -599,7 +599,7 @@ const download_all_pdf = async (req: any) => {
             const writer = fs.createWriteStream(localFilePath);
             response.data.pipe(writer);
 
-            await new Promise((resolve, reject) => {
+            await new Promise((resolve:any, reject:any) => {
                 writer.on('finish', resolve);
                 writer.on('error', reject);
             });
@@ -659,7 +659,7 @@ const download_zip_file = async (req:any) => {
         const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
 
         // Cleanup local files
-        downloadedFiles.forEach((file) => fs.unlinkSync(file));
+        downloadedFiles.forEach((file:any) => fs.unlinkSync(file));
         fs.unlinkSync(zipFilePath);
 
         return zipFileUrl;
@@ -722,7 +722,7 @@ const download_all_pdf_by_client = async (req:any) => {
 
 
 
-            await new Promise((resolve, reject) => {
+            await new Promise((resolve:any, reject:any) => {
                 writer.on('finish', resolve);
                 writer.on('error', reject);
             });

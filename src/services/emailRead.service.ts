@@ -1,11 +1,5 @@
 'use strict';
-import CONSTANTS from '../common/constants/constants';
-import moment from "moment/moment";
-import path from "path";
 import fs from "fs";
-import clientTradeModel from "../models/preTrade.model";
-import axios from "axios";
-import fileService from "./common/file.service";
 import Imap from "imap-simple";
 import { simpleParser } from 'mailparser'; // This is optional, only if you need to parse email bodies
 
