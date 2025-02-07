@@ -241,16 +241,20 @@ const read_email = async (req: any) => {
             return true;
         }
 
-        // Group emails by threadId
-        const threads: { [key: string]: any[] } = {};
+                    // Group emails by threadId
+            const threads: { [key: string]: any[] } = {};
 
-        for (const msg of responses.data.messages) {
+            for (const msg of responses.data.messages) {
             const email: any = await gmail.users.messages.get({
                 userId: "me",
                 id: msg.id,
                 format: "full",
             });
 
+            // console.log("email --------");
+            // console.dir(email, { depth: null });
+
+            // Get headers and message-id
             const allHeaders = email.data.payload?.headers || [];
             const messageIdHeader = allHeaders.find((header: any) =>
                 header.name.toLowerCase() === "message-id"
@@ -262,30 +266,51 @@ const read_email = async (req: any) => {
                 allHeaders.map((header: any) => [header.name, header.value])
             );
 
+            // Extract the body
             let body = "";
-            const parts = email.data.payload.parts || [];
-            for (const part of parts) {
-                if (part.body?.data) {
-                    const decodedBody = Buffer.from(part.body.data, "base64").toString("utf-8");
-                    if (part.mimeType === "text/html" || !body) {
-                        body = decodedBody;
-                    }
+            const payload = email.data.payload;
+            
+            if (payload.parts && payload.parts.length) {
+                // For multipart emails
+                for (const part of payload.parts) {
+                if (part.mimeType === "text/html" && part.body?.data) {
+                    body = Buffer.from(part.body.data, "base64").toString("utf-8");
+                    break;
+                } else if (part.mimeType === "text/plain" && part.body?.data) {
+                    // Fallback to text/plain if html is not found
+                    body = Buffer.from(part.body.data, "base64").toString("utf-8");
                 }
+                }
+            } else if (payload.body && payload.body.data) {
+                // For non-multipart emails (like email 2)
+                 const decodedBody = Buffer.from(payload.body.data, "base64").toString("utf-8");
+
+                 // Extract the content between <body> and </body>
+                    const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                    body = match ? match[1] : decodedBody;
             }
+
+                        // console.log("body  --------",body);
+
+
             threads[msg.threadId].push({
                 id: msg.id,
                 messageId: messageIdHeader,
                 headers,
                 body,
             });
-        }
+            }
 
+
+        // console.log("threads---------",threads)
         const extractEmailParts = (headerValue: string) => {
             const match = headerValue.match(/(.*?)\s*<(.*)>/);
             return match ? [match[1].trim(), match[2]] : [headerValue, ''];
         };
 
         const finalThread = {} as any
+
+
         // await Promise.all(
         //     Object.entries(threads).map(async ([threadId, emails]) => {
         //         finalThread[threadId] = {
@@ -312,7 +337,15 @@ const read_email = async (req: any) => {
         //         return true;
         //     })
         // );
+        
         // console.log("finalThread",finalThread)
+
+
+
+    
+
+
+
         await Promise.all(
             Object.entries(threads).map(async ([threadId, emails]) => {
                 finalThread[threadId] = {
@@ -323,6 +356,13 @@ const read_email = async (req: any) => {
                 emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
                 if(emails.length > 1) {
                     const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
+                    let emailPart2 = ' '
+                    if(!emailPart){
+                         emailPart2 = namePart
+                    }else{
+                        emailPart2 = emailPart
+                    }
+
 
                     let htmlContent = `<!DOCTYPE html>
         <html lang="en">
@@ -330,15 +370,16 @@ const read_email = async (req: any) => {
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
             <meta http-equiv="X-UA-Compatible" content="IE=edge">
             <title>Gmail - ${emails[0].headers.Subject}</title>
-            <style>
-                body, td, div, p, a, input { font-family: arial, sans-serif; }
-                body, td { font-size: 13px; }
-                a:link, a:active { color: #1155CC; text-decoration: none; }
-                a:hover { text-decoration: underline; cursor: pointer; }
-                img { border: 0px; }
-                pre { white-space: pre-wrap; word-wrap: break-word; max-width: 800px; overflow: auto; }
-                .logo { left: -7px; position: relative; }
-            </style>
+           
+                    <style>
+            body, td, div, p, a, input { font-family: arial, sans-serif; }
+            body, td { font-size: 13px; }
+            a:link, a:active { color: #1155CC; text-decoration: none; }
+            a:hover { text-decoration: underline; cursor: pointer; }
+            img { border: 0px; }
+            pre { white-space: pre-wrap; word-wrap: break-word; max-width: 800px; overflow: auto; }
+            .logo { left: -7px; position: relative; }
+        </style>
         </head>
         <body>
             <div class="bodycontainer">
@@ -348,7 +389,7 @@ const read_email = async (req: any) => {
                             <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/logo_gmail_server_1x.png" width="143" height="59" alt="Gmail" class="logo">
                         </td>
                         <td align="right">
-                            <font size="-1" color="#777"><b>${namePart}</b> &lt;${emailPart}&gt;</font>
+                            <font size="-1" color="#777"><b>${namePart}</b> &lt;${emailPart2}&gt;</font>
                         </td>
                     </tr>
                 </table>
@@ -373,8 +414,15 @@ const read_email = async (req: any) => {
                         // replace Email with can
                         if (senderEmail.toLowerCase().includes("canned")) {
                             senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            console.log("senderEmail",senderEmail)
+                            // console.log("senderEmail",senderEmail)
 
+                        }
+
+                        let senderEmail2 = ' '
+                        if(senderEmail){
+                            senderEmail2 = senderEmail
+                        }else{
+                            senderEmail2 = senderName
                         }
 
                         if(client_proof_info[senderEmail]) {
@@ -388,7 +436,7 @@ const read_email = async (req: any) => {
                         return `<hr>
                 <table width="100%" cellpadding="0" cellspacing="0" class="message">
                     <tr>
-                        <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail}&gt;</font></td>
+                        <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
                         <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
                     </tr>
                     <tr>
@@ -424,6 +472,10 @@ const read_email = async (req: any) => {
                 return true;
             })
         );
+
+
+          
+  
 
         // // Iterate and update each object in the data structure
         // Object.values(finalThread).forEach(({ email_url, pre_trade_proof_id }) => {
