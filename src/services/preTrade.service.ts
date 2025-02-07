@@ -31,11 +31,11 @@ const fetch_all_clients_trades = async (req: any) => {
             }
         });
         return {
-            total_client_count:organization_statistics[0].total_client_count,
-            total_email_sent:organization_statistics[0].total_email_sent,
-            total_email_received:organization_statistics[0].total_email_received,
+            total_client_count: organization_statistics.length && organization_statistics[0].total_client_count || 0,
+            total_email_sent: organization_statistics.length && organization_statistics[0].total_email_sent || 0,
+            total_email_received: organization_statistics.length && organization_statistics[0].total_email_received || 0,
             data:clients,
-            total:total[0].total
+            total:total[0].total || 0
 
         }
     } catch (error: any) {

@@ -192,7 +192,7 @@ const uploadEmailFileToS3Bucket = async (organization_id:any,body: any) => {
         // Upload the file to the specified "folder" in S3
         const fileStream = fs.createReadStream(filePath);
         const result = await awsS3Bucket.uploadFile(fileStream, s3FolderPath, fileName);
-        return CONFIGS.AWS.S3.BASE_URL+result.key;
+        return result.key;
     } catch (error:any) {
         console.error(`Error processing form or uploading file: ${error.message}`);
         throw error;

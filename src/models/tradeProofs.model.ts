@@ -106,6 +106,15 @@ class TradeProofsModel extends BaseModel {
         return await this._executeQuery(query, [data]);
     }
 
+
+    async getClientEmails(organization_id : number) {
+        const query = `SELECT client_code, REPLACE(client_name, ' ', '-') AS client_name, email 
+                       FROM clients  
+                       WHERE organization_id = ?;
+`;
+        return await this._executeQuery(query, [organization_id]);
+    }
+
     /***************** Pre Trades Info *********************/
 
     async save_trade_info(data: any) {
@@ -177,15 +186,29 @@ class TradeProofsModel extends BaseModel {
 
 
     async fetch_all_trade_proof_urls(organization_id:number) {
-        const query = `SELECT pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url    
+        const query = `SELECT pre_trade_proof_id, client_code ,created_date ,  
+        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url,
+        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',email_url)as email_url      
         FROM pre_trade_proofs WHERE organization_id = ? `;
+        return await this._executeQuery(query, [organization_id]);
+    }
+
+    async fetch_all_trade_proof_email_read(organization_id:number) {
+        const query = `SELECT pre_trade_proof_id,c.client_id, c.client_code ,ptp.created_date,c.email as client_email
+                    FROM pre_trade_proofs ptp  
+                    LEFT JOIN clients c ON c.client_id = ptp.client_id
+                    WHERE 
+                    -- ptp.organization_id = ? 
+                    email_url IS NULL`;
         return await this._executeQuery(query, [organization_id]);
     }
 
 
 
     async fetch_all_trade_proof_urls_by_client_id(client_id:number) {
-        const query = `SELECT pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url    
+        const query = `SELECT pre_trade_proof_id, client_code ,created_date ,  
+        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url,
+        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',email_url)as email_url
         FROM pre_trade_proofs WHERE client_id = ?`;
         return await this._executeQuery(query, [client_id]);
     }

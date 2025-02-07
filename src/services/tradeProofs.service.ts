@@ -72,20 +72,20 @@ const download_all_email = async (req:any) => {
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
         // Fetch all trade proof URLs
-        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1);
+        const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls(1);
 
         const downloadedFiles: string[] = [];
 
         // Download each file
-        for (const pdf of all_pdfs) {
+        for (const email of all_emails) {
 
-            const fileName = `${pdf.pre_trade_proof_id}_${pdf.client_code}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
+            const fileName = `${email.pre_trade_proof_id}_${email.client_code}_${moment(email.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
 
             const localFilePath = path.join(uploadDir, fileName);
 
             try {
                 const response = await axios({
-                    url: pdf.pdf_url,
+                    url: email.email_url,
                     method: 'GET',
                     responseType: 'stream',
                 }) as any;
@@ -101,7 +101,7 @@ const download_all_email = async (req:any) => {
                 downloadedFiles.push(localFilePath);
 
             } catch (downloadError:any) {
-                console.error(`Failed to download file from ${pdf.pdf_url}: ${downloadError.message}`);
+                console.error(`Failed to download file from ${email.email_url}: ${downloadError.message}`);
             }
         }
 
@@ -279,20 +279,20 @@ const download_all_email_by_client = async (req:any) => {
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
         // Fetch all trade proof URLs
-        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls_by_client_id(req.query.client_id);
+        const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls_by_client_id(req.query.client_id);
 
         const downloadedFiles: string[] = [];
 
         // Download each file
-        for (const pdf of all_pdfs) {
+        for (const email of all_emails) {
 
-            const fileName = `${pdf.pre_trade_proof_id}_${pdf.client_code}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
+            const fileName = `${email.pre_trade_proof_id}_${email.client_code}_${moment(email.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
 
             const localFilePath = path.join(uploadDir, fileName);
 
             try {
                 const response = await axios({
-                    url: pdf.pdf_url,
+                    url: email.email_url,
                     method: 'GET',
                     responseType: 'stream',
                 }) as any;
@@ -308,7 +308,7 @@ const download_all_email_by_client = async (req:any) => {
                 downloadedFiles.push(localFilePath);
 
             } catch (downloadError:any) {
-                console.error(`Failed to download file from ${pdf.pdf_url}: ${downloadError.message}`);
+                console.error(`Failed to download file from ${email.email_url}: ${downloadError.message}`);
             }
         }
 

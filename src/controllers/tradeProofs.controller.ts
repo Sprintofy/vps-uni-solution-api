@@ -112,6 +112,90 @@ const read_email: IController = async (req: any, res: any) => {
     }
 }
 
+// const generateAuthUrlC: IController = async (req: any, res: any) => {
+//     try {
+//         const clientId = req.query.clientId as string;
+//         if (!clientId)
+//         apiResponse.error(res, httpStatusCodes.BAD_REQUEST, "Client ID is required", null);
+//
+//         const authUrl = await generateAuthUrl(clientId);
+//         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, authUrl)
+//     } catch (error: any) {
+//         if (error instanceof Error) {
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+//         } else {
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+//         }
+//     }
+// }
+//
+// const exchangeCodeForTokensC: IController = async (req: any, res: any) => {
+//     try {
+//         const { clientId, code } = req.query;
+//         if (!clientId || !code)
+//         apiResponse.error(res, httpStatusCodes.BAD_REQUEST,  "Missing clientId or code", null);
+//
+//         const tokens = await exchangeCodeForTokens(code as string);
+//         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, tokens)
+//     } catch (error: any) {
+//         if (error instanceof Error) {
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+//         } else {
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+//         }
+//     }
+// }
+//
+// const read_email_m: IController = async (req: any, res: any) => {
+//     try {
+//         let results = await gmailDownloadService.read_email_m2(req);
+//         // const jobId = uuidv4()
+//
+//         // const { organization_id } = req.query
+//
+//         // const job = await jobQueue.add('emailProcessing', {organization_id}, { jobId });
+//         // apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, { message: 'Exporting all emails..', jobId: job.id })
+//         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+//
+//     } catch (error: any) {
+//         if (error instanceof Error) {
+//             console.log("inside if in catch")
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+//         } else {
+//             console.log("inside else in catch")
+//
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+//         }
+//     }
+// }
+//
+// const getEmailDownloadProgress: IController = async (req: any, res: any) => {
+//     try {
+//
+//         // const { jobId } = req.query
+//
+//         // const job = await jobQueue.getJob(jobId);
+//         // if(job){
+//         //     if(job?.progress === 100){
+//         //         const url = await job.returnvalue;
+//         //         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH,{progress : job?.progress , downloadLink : url})
+//
+//         //     }
+//         //     apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH,{progress : job?.progress , downloadLink : ' '})
+//
+//         // }else{
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, "Failed to get progress", null);
+//
+//         // }
+//     } catch (error: any) {
+//         if (error instanceof Error) {
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+//         } else {
+//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+//         }
+//     }
+// }
+
 
 export default {
 
@@ -124,5 +208,5 @@ export default {
     download_all_pdf_by_client: download_all_pdf_by_client,
     download_all_email_by_client:download_all_email_by_client,
 
-    read_email: read_email
+    read_email: read_email,
 }

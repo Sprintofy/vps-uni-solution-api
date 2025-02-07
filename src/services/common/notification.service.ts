@@ -1,5 +1,5 @@
 "use strict";
-import puppeteer from 'puppeteer-core';
+import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import CONSTANTS from '../../common/constants/constants';
@@ -209,10 +209,14 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 `;
 
     // Launch Puppeteer to generate PDF
+    // const browser = await puppeteer.launch({
+    //     executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
+    //     headless: true,
+    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
+    // });
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
     });
    const page = await browser.newPage();
 
@@ -243,8 +247,89 @@ const readPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
     await emailService.readOrganizationWiseEmail(organization_id,null);
 }
 
+const generatePreTradeEmailPdfClientWise_old = async(organization_id:any,data:any)=> {
+
+    // todo fetch Email/template config From Organization wise
+
+    const htmlContent = data.htmlContent;
+
+    // Launch Puppeteer to generate PDF
+    const browser = await puppeteer.launch({
+        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
+    });
+    const page = await browser.newPage();
+
+    // Set HTML content
+    await page.setContent(htmlContent);
+
+    // Generate PDF
+
+    const file_name = `${data.client_code}_trade_info_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+    const uploadDir = path.join(__dirname, '../../../../public/upload'); // Create directory path relative to the current script
+    const file_path = path.join(uploadDir, file_name);
+
+    console.log(file_path);
+
+    await page.pdf({ path: file_path, format: 'A4', printBackground: true });
+    // Close the browser
+    await browser.close();
+    // await generatePdfFile(htmlContent, file_path);
+
+    const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id,{file_name,file_path})
+
+    fs.unlinkSync(file_path);
+    return aws_s3_url;
+}
+
+const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any) => {
+    try {
+
+        // Ensure the upload directory exists
+        const uploadDir = path.join(__dirname, '../../../../public/upload');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true }); // Create if not exists
+        }
+
+        // Launch Puppeteer
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+        });
+
+        const page = await browser.newPage();
+
+        // Set HTML content
+        await page.setContent(data.htmlContent, { waitUntil: 'load' });
+
+        // Generate PDF
+        const file_name = `${data.client_code}_trade_info_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const file_path = path.join(uploadDir, file_name);
+
+        console.log(`Saving PDF at: ${file_path}`);
+
+        await page.pdf({ path: file_path, format: 'A4', printBackground: true });
+
+        // Close browser
+        await browser.close();
+
+        // Upload PDF to S3
+        const aws_s3_url = await fileService.uploadEmailFileToS3Bucket(organization_id, { file_name, file_path });
+
+        // Remove local file after uploading
+        //fs.unlinkSync(file_path);
+
+        return aws_s3_url;
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        throw error;
+    }
+};
+
 export default {
     sendPreTradeEmailToClientOrganizationWise: sendPreTradeEmailToClientOrganizationWise,
     readPreTradeEmailToClientOrganizationWise: readPreTradeEmailToClientOrganizationWise,
-    generatePreTradeClientWise: generatePreTradeClientWise
+    generatePreTradeClientWise: generatePreTradeClientWise,
+    generatePreTradeEmailPdfClientWise:generatePreTradeEmailPdfClientWise
 };
