@@ -10,8 +10,12 @@ import clientModel from "../models/client.model";
 import fileService from './common/file.service';
 const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
+const emailReadService = require("./emailRead.service");
+
 const fetch_all_clients_proofs = async (req: any) => {
     try {
+         emailReadService.read_email(req);
+
         const clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_all_clients_proofs_count(req.body.client_id,req.body.filterData,req.body.query || "");
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query || "")
@@ -31,6 +35,7 @@ const fetch_all_clients_proofs = async (req: any) => {
 
 const fetch_all_clients_trades_logs = async (req: any) => {
     try {
+        emailReadService.read_email(req);
         const clients = await tradeProofsModel.fetch_all_clients_trades_logs(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_all_clients_trades_logs_count(1,req.body.query || "");
         return {
@@ -45,6 +50,7 @@ const fetch_all_clients_trades_logs = async (req: any) => {
 
 const fetch_trades_details_by_client_id = async(req:any)=> {
     try {
+        emailReadService.read_email(req);
         const clients = await tradeProofsModel.fetch_trade_by_client(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_trade_by_client_count(req.body.client_id,req.body.filterData,req.body.query || "");
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query)
@@ -130,7 +136,7 @@ const download_all_email = async (req:any) => {
 
 const download_all_pdf = async (req: any) => {
     try {
-
+        emailReadService.read_email(req);
         const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
         const uploadDir = path.join(__dirname, '../../../public/upload');
         console.log("uploadDir path ",path)
@@ -199,7 +205,7 @@ const download_all_pdf = async (req: any) => {
 
 const download_all_pdf_by_client = async (req:any) => {
     try {
-
+        emailReadService.read_email(req);
         const client_info = await clientModel.fetch_client_info_by_id(req.query.client_id);
 
         const zip_file_name = `${client_info[0].client_code}_pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
