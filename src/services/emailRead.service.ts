@@ -269,7 +269,7 @@ const read_email = async (req: any) => {
             // Extract the body
             let body = "";
             const payload = email.data.payload;
-            
+
             if (payload.parts && payload.parts.length) {
                 // For multipart emails
                 for (const part of payload.parts) {
@@ -337,12 +337,12 @@ const read_email = async (req: any) => {
         //         return true;
         //     })
         // );
-        
+
         // console.log("finalThread",finalThread)
 
 
 
-    
+
 
 
 
@@ -474,8 +474,8 @@ const read_email = async (req: any) => {
         );
 
 
-          
-  
+
+
 
         // // Iterate and update each object in the data structure
         // Object.values(finalThread).forEach(({ email_url, pre_trade_proof_id }) => {
@@ -553,6 +553,165 @@ function formatDate(dateString: string) {
     }).format(date);
 }
 
+// Function to generate PDF from HTML using Puppeteer
+const processingThreadAndClientProof = async (threads: any,client_proof_info:any) => {
+    const extractEmailParts = (headerValue: string) => {
+        const match = headerValue.match(/(.*?)\s*<(.*)>/);
+        return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+    };
+    const finalThread = {} as any
+    await Promise.all(
+        Object.entries(threads).map(async ([threadId, emails]) => {
+            const emailList = emails as any;
+            finalThread[threadId] = {
+                thread_id : threadId,
+                emails: [] as any
+            } as any;
+            // Sort emails by date (oldest to newest)
+            emailList.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
+
+            if(emailList.length > 1 ) {
+                emailList.map((email:any) => {
+                    let [senderName, senderEmail] = extractEmailParts(email.headers.From);
+                    let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
+                    // replace Email with can
+                    if (senderEmail.toLowerCase().includes("canned")) {
+                        senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
+                        // console.log("senderEmail",senderEmail)
+                    }
+
+                    if(client_proof_info[senderEmail]) {
+                        console.log("client_proof_info",client_proof_info[senderEmail])
+                        finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
+                        finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
+                        finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
+                        finalThread[threadId].emails = emails
+                    }
+                    // console.log("recipientName",recipientName,recipientEmail)
+                    return true
+                });
+            }
+            return true;
+        })
+    );
+    return finalThread
+};
+
+const processingThreadAndClientEmail = async (threads: any) => {
+
+    const extractEmailParts = (headerValue: string) => {
+        const match = headerValue.match(/(.*?)\s*<(.*)>/);
+        return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+    };
+
+    await Promise.all(
+        Object.entries(threads).map(async ([threadId, emails]) => {
+            const emailList = emails as any;
+
+            emailList.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
+
+            if(emailList.length > 1) {
+                const [namePart, emailPart] = extractEmailParts(emailList[0].headers.From);
+                let emailPart2 = ' '
+                if(!emailPart){
+                    emailPart2 = namePart
+                }else{
+                    emailPart2 = emailPart
+                }
+                let htmlContent = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Gmail - ${emailList[0].headers.Subject}</title>
+
+                <style>
+        body, td, div, p, a, input { font-family: arial, sans-serif; }
+        body, td { font-size: 13px; }
+        a:link, a:active { color: #1155CC; text-decoration: none; }
+        a:hover { text-decoration: underline; cursor: pointer; }
+        img { border: 0px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; max-width: 800px; overflow: auto; }
+        .logo { left: -7px; position: relative; }
+    </style>
+    </head>
+    <body>
+        <div class="bodycontainer">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr height="14px">
+                    <td width="143">
+                        <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/logo_gmail_server_1x.png" width="143" height="59" alt="Gmail" class="logo">
+                    </td>
+                    <td align="right">
+                        <font size="-1" color="#777"><b>${namePart}</b> &lt;${emailPart2}&gt;</font>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+            <div class="maincontent">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td>
+                            <font size="+1"><b>${emails[0].headers.Subject}</b></font><br>
+                            <font size="-1" color="#777">${emails.length} messages</font>
+                        </td>
+                    </tr>
+                </table>`;
+
+                htmlContent += emailList.map((email:any) => {
+                    //console.log("inner email",email)
+                    let [senderName, senderEmail] = extractEmailParts(email.headers.From);
+                    let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
+                    //console.log("senderEmail email",senderEmail)
+                    //console.log("recipientEmail email",recipientEmail)
+
+                    // replace Email with can
+
+                    let senderEmail2 = ' '
+                    if(senderEmail){
+                        senderEmail2 = senderEmail
+                    }else{
+                        senderEmail2 = senderName
+                    }
+                    return `<hr>
+            <table width="100%" cellpadding="0" cellspacing="0" class="message">
+                <tr>
+                    <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
+                    <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding-bottom: 4px;">
+                        <font size="-1" class="recipient">
+                            <div>To: ${recipientName} ${recipientEmail ? `&lt;${recipientEmail}&gt;` : ''}</div>
+                        </font>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <table width="100%" cellpadding="12" cellspacing="0">
+                            <tr>
+                                <td>
+                                    <div style="overflow: hidden;">
+                                        <font size="-1">${email.body}</font>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>`;
+                }).join('');
+
+                htmlContent += `</div></div></body></html>`;
+
+                const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: 123 });
+                console.log(email_url)
+                await tradeProofsModel.update_pre_trade_proofs({email_url:email_url},finalThread[threadId].pre_trade_proof_id);
+            }
+            return true;
+        })
+    );
+};
 
 export default {
     read_email:read_email
