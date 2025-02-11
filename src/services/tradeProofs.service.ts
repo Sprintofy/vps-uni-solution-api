@@ -82,7 +82,7 @@ const download_all_email = async (req: any) => {
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
         // Fetch all trade proof URLs
-        const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls(1);
+        const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls(1,req.query.start_date,req.query.end_date);
 
         const downloadedFiles: string[] = [];
         const create_excel_data: any[] = []; // Ensure it's initialized as an array
@@ -170,7 +170,7 @@ const download_all_pdf = async (req: any) => {
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
         // Fetch all trade proof URLs
-        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1);
+        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1,req.query.start_date,req.query.end_date);
 
         const downloadedFiles: string[] = [];
         const create_excel_data: any[] = []; // Ensure it's initialized as an array

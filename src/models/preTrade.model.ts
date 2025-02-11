@@ -21,6 +21,10 @@ class ClientTradeModel extends BaseModel {
 
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
+        if (filter_data && filter_data.start_date && filter_data.end_date) {
+            query += ` AND DATE(pti.created_date) BETWEEN ('${filter_data.start_date}' AND '${filter_data.end_date}') `;
+        }
+
         search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? || c.client_code LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
@@ -29,7 +33,6 @@ class ClientTradeModel extends BaseModel {
 
         parameters.push(limit, offset);
 
-        console.log(query)
 
         return await this._executeQuery(query, parameters)
     }
@@ -46,6 +49,10 @@ class ClientTradeModel extends BaseModel {
             WHERE pt.organization_id = ? `
 
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+        if (filter_data && filter_data.start_date && filter_data.end_date) {
+            query += ` AND DATE(pti.created_date) BETWEEN ('${filter_data.start_date}' AND '${filter_data.end_date}') `;
+        }
 
         search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? || c.client_code LIKE ? )  ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
