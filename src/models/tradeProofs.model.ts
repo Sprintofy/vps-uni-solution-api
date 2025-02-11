@@ -193,7 +193,7 @@ class TradeProofsModel extends BaseModel {
         WHERE ptp.organization_id = ? `
 
         if (start_date && end_date) {
-            query += ` AND DATE(ptp.created_date) BETWEEN ('${start_date}' AND '${end_date}') `;
+            query += ` AND DATE(ptp.created_date) BETWEEN '${start_date}' AND '${end_date}' `;
         }
         return await this._executeQuery(query, [organization_id]);
     }
