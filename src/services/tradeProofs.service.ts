@@ -75,7 +75,7 @@ const download_all_email = async (req: any) => {
         const uploadDir = path.join(__dirname, '../../../public/upload');
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
-        const excel_file_name = `pre_trade_CDR_${moment().format('YYYY_MM_DD')}.xlsx`;
+        const excel_file_name = `pre_trade_CDR_${moment().format('YYYY_MM_DD_HH-mm-ss')}.xlsx`;
         const excel_file_path = path.join(uploadDir, excel_file_name);
 
         // Ensure the upload directory exists
@@ -163,7 +163,7 @@ const download_all_pdf = async (req: any) => {
         const uploadDir = path.join(__dirname, '../../../public/upload');
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
-        const excel_file_name = `pre_trade_CDR_${moment().format('YYYY_MM_DD')}.xlsx`;
+        const excel_file_name = `pre_trade_CDR_${moment().format('YYYY_MM_DD_HH-mm-ss')}.xlsx`;
         const excel_file_path = path.join(uploadDir, excel_file_name);
 
         // Ensure the upload directory exists
