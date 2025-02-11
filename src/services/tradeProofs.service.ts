@@ -3,11 +3,13 @@ import path from "path";
 import moment from "moment";
 import fs from "fs";
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import archiver from 'archiver';
 import CONSTANTS from '../common/constants/constants';
 import tradeProofsModel from '../models/tradeProofs.model';
 import clientModel from "../models/client.model";
 import fileService from './common/file.service';
+import {executablePath} from "puppeteer";
 const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 const emailReadService = require("./emailRead.service");
@@ -67,12 +69,14 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
     }
 }
 
-const download_all_email = async (req:any) => {
+const download_all_email = async (req: any) => {
     try {
-
         const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
         const uploadDir = path.join(__dirname, '../../../public/upload');
         const zip_file_path = path.join(uploadDir, zip_file_name);
+
+        const excel_file_name = `pre_trade_CDR_${moment().format('YYYY_MM_DD')}.xlsx`;
+        const excel_file_path = path.join(uploadDir, excel_file_name);
 
         // Ensure the upload directory exists
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -81,15 +85,21 @@ const download_all_email = async (req:any) => {
         const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls(1);
 
         const downloadedFiles: string[] = [];
+        const create_excel_data: any[] = []; // Ensure it's initialized as an array
 
         // Download each file
         for (const email of all_emails) {
-
-            const fileName = `${email.pre_trade_proof_id}_${email.client_code}_${moment(email.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
-
+            const fileName = `${email.client_code}_${email.pre_trade_proof_id}_${moment(email.created_date).format('YYYY-MM-DD')}.pdf`;
             const localFilePath = path.join(uploadDir, fileName);
-
             try {
+                // Collect data for Excel
+                create_excel_data.push({
+                    'Trade Date': moment(email.created_date).format('YYYY-MM-DD'),
+                    'Client Code': email.client_code,
+                    'File Name': fileName, // Use correct file name
+                });
+
+                // Download the file
                 const response = await axios({
                     url: email.email_url,
                     method: 'GET',
@@ -106,16 +116,28 @@ const download_all_email = async (req:any) => {
 
                 downloadedFiles.push(localFilePath);
 
-            } catch (downloadError:any) {
+            } catch (downloadError: any) {
                 console.error(`Failed to download file from ${email.email_url}: ${downloadError.message}`);
             }
         }
 
+        // Create Excel sheet
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(create_excel_data);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Emails");
+        XLSX.writeFile(workbook, excel_file_path);
+
+        // Add Excel file to zip
+        downloadedFiles.push(excel_file_path);
+
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
 
-        // upload Zip File S3
-        const results = await fileService.uploadZipFileToS3Bucket(1,{file_name:zip_file_name,file_path:zip_file_path});
+        // Upload Zip File to S3
+        const results = await fileService.uploadZipFileToS3Bucket(1, {
+            file_name: zip_file_name,
+            file_path: zip_file_path
+        });
 
         // Cleanup local files
         downloadedFiles.forEach((file) => {
@@ -129,7 +151,7 @@ const download_all_email = async (req:any) => {
 
         return results;
     } catch (error: any) {
-        console.error(`Error download all email: ${error.message}`);
+        console.error(`Error downloading all emails: ${error.message}`);
         throw error;
     }
 };

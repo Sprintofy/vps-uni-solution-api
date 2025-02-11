@@ -552,7 +552,7 @@ function formatDate(dateString: string) {
         hour12: true,
     }).format(date);
 }
-
+/*
 // Function to generate PDF from HTML using Puppeteer
 const processingThreadAndClientProof = async (threads: any,client_proof_info:any) => {
     const extractEmailParts = (headerValue: string) => {
@@ -712,7 +712,7 @@ const processingThreadAndClientEmail = async (threads: any) => {
         })
     );
 };
-
+*/
 export default {
     read_email:read_email
 
