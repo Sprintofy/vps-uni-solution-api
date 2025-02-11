@@ -89,7 +89,7 @@ const download_all_email = async (req: any) => {
 
         // Download each file
         for (const email of all_emails) {
-            const fileName = `${email.client_code}_${email.pre_trade_proof_id}_${moment(email.created_date).format('YYYY-MM-DD')}.pdf`;
+            const fileName = `${email.client_code}_${email.pre_trade_proof_id}_${moment(email.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
             const localFilePath = path.join(uploadDir, fileName);
             try {
                 // Collect data for Excel
@@ -158,12 +158,13 @@ const download_all_email = async (req: any) => {
 
 const download_all_pdf = async (req: any) => {
     try {
-        emailReadService.read_email(req);
+        //emailReadService.read_email(req);
         const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
         const uploadDir = path.join(__dirname, '../../../public/upload');
-        console.log("uploadDir path ",path)
-        console.log("uploadDir",uploadDir)
         const zip_file_path = path.join(uploadDir, zip_file_name);
+
+        const excel_file_name = `pre_trade_CDR_${moment().format('YYYY_MM_DD')}.xlsx`;
+        const excel_file_path = path.join(uploadDir, excel_file_name);
 
         // Ensure the upload directory exists
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -172,13 +173,21 @@ const download_all_pdf = async (req: any) => {
         const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1);
 
         const downloadedFiles: string[] = [];
+        const create_excel_data: any[] = []; // Ensure it's initialized as an array
 
         // Download each file
         for (const pdf of all_pdfs) {
 
-            const fileName = `${pdf.pre_trade_proof_id}_${pdf.client_code}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
+            const fileName = `${pdf.client_code}_${pdf.pre_trade_proof_id}_${moment(pdf.created_date).format('YYYY-MM-DD_HH-mm-ss')}.pdf`;
 
             const localFilePath = path.join(uploadDir, fileName);
+
+            // Collect data for Excel
+            create_excel_data.push({
+                'Trade Date': moment(pdf.created_date).format('YYYY-MM-DD'),
+                'Client Code': pdf.client_code,
+                'File Name': fileName, // Use correct file name
+            });
 
             try {
                 const response = await axios({
@@ -201,6 +210,15 @@ const download_all_pdf = async (req: any) => {
                 console.error(`Failed to download file from ${pdf.pdf_url}: ${downloadError.message}`);
             }
         }
+
+        // Create Excel sheet
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(create_excel_data);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Emails");
+        XLSX.writeFile(workbook, excel_file_path);
+
+        // Add Excel file to zip
+        downloadedFiles.push(excel_file_path);
 
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
