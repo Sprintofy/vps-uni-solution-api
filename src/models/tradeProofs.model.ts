@@ -190,7 +190,7 @@ class TradeProofsModel extends BaseModel {
         CONCAT('${CONFIGS.AWS.S3.BASE_URL}',ptp.pdf_url)as pdf_url,
         CONCAT('${CONFIGS.AWS.S3.BASE_URL}',ptp.email_url)as email_url      
         FROM pre_trade_proofs ptp
-        WHERE organization_id = ? `
+        WHERE ptp.organization_id = ? `
 
         if (start_date && end_date) {
             query += ` AND DATE(ptp.created_date) BETWEEN ('${start_date}' AND '${end_date}') `;

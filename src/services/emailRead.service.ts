@@ -212,8 +212,6 @@ const read_email = async (req: any) => {
         // todo fetch organizations
         const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1);
 
-        console.log(results)
-
 
         const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
 
@@ -227,14 +225,13 @@ const read_email = async (req: any) => {
 
         const gmail: any = google.gmail({ version: "v1", auth });
 
-        const date = new Date('2025-01-31');
+        const date = new Date(moment().format('YYYY-MM-DD'));
         const timestamp = Math.floor(date.getTime() / 1000);
 
         const responses = await gmail.users.messages.list({
             userId: "me",
-            q: `subject:"Pre Trade Confirmation" after:${moment().format('YYYY-MM-DD')}`,
+            q: `subject:"Pre Trade Confirmation"`,
         });
-
 
         if(!responses.data.resultSizeEstimate) {
             console.log("No Message Found...!")
@@ -302,7 +299,7 @@ const read_email = async (req: any) => {
             }
 
 
-        // console.log("threads---------",threads)
+        console.log("threads---------",threads)
         const extractEmailParts = (headerValue: string) => {
             const match = headerValue.match(/(.*?)\s*<(.*)>/);
             return match ? [match[1].trim(), match[2]] : [headerValue, ''];
@@ -484,6 +481,7 @@ const read_email = async (req: any) => {
 
         return true;
     } catch(error: any) {
+        console.log(error)
         return  true;
     }
 
