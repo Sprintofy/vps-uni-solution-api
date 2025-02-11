@@ -129,7 +129,7 @@ const download_all_email = async (req: any) => {
 
         // Add Excel file to zip
         downloadedFiles.push(excel_file_path);
-
+console.log("downloadedFiles",downloadedFiles)
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
 
@@ -219,7 +219,7 @@ const download_all_pdf = async (req: any) => {
 
         // Add Excel file to zip
         downloadedFiles.push(excel_file_path);
-
+        console.log("downloadedFiles",downloadedFiles)
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
 
