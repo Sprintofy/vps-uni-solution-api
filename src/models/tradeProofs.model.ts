@@ -11,7 +11,9 @@ class TradeProofsModel extends BaseModel {
         let parameters=[];
         parameters.push(client_id)
         let query =`SELECT pft.pre_trade_proof_id, pft.client_id, pft.client_code,pft.organization_id, 
-                pft.is_email_sent, pft.is_email_received, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url) as email_url, pft.email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url)as pdf_url, 
+                pft.is_email_sent,
+                CASE WHEN pft.email_url IS NOT NULL THEN 1 ELSE 0 END as is_email_received, 
+                CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.email_url) as email_url, pft.email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url)as pdf_url, 
                 pft.email_response, pft.status, pft.created_by, pft.updated_by,DATE_FORMAT(pft.created_date, '%Y-%m-%d') as created_date  , pft.updated_date,
                 IFNULL(
                         JSON_EXTRACT(
