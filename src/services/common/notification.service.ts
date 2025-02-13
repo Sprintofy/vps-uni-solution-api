@@ -61,7 +61,7 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
         .map((trade:any) => `
           <tr>
             <td>${trade.exchange_code}</td>
-            <td>${trade.buy_or_sell=='S'? 'Sell':'Buy' }</td>
+            <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
             <td>${trade.product}</td>
             <td>${trade.script_name}</td>
             <td>${trade.quantity}</td>
@@ -169,7 +169,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
                 <tr>
                     <td>${index + 1}</td>
                     <td>${trade.script_name || ''}</td>
-                    <td>${trade.buy_or_sell == 'S' ? 'Sell' : 'Buy'}</td>
+                   <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
                     <td>${trade.quantity || ''}</td>
                     <td>${trade.price}</td>
                      <td>${trade.trigger_price}</td>
@@ -209,15 +209,15 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 `;
 
     // Launch Puppeteer to generate PDF
-    const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
-    });
     // const browser = await puppeteer.launch({
+    //     executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
     //     headless: true,
-    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
     // });
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+    });
    const page = await browser.newPage();
 
     // Set HTML content

@@ -85,7 +85,7 @@ const download_all_email = async (req: any) => {
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
         // Fetch all trade proof URLs
-        const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls(1,req.query.start_date,req.query.end_date);
+        const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls_email(1,req.query.start_date,req.query.end_date);
 
         console.log("all_emails",all_emails)
         const downloadedFiles: string[] = [];

@@ -22,7 +22,7 @@ class ClientTradeModel extends BaseModel {
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
         if (filter_data && filter_data.start_date && filter_data.end_date) {
-            query += ` AND DATE(pti.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
+            query += ` AND DATE(ptp.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
         }
 
         search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? || c.client_code LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
@@ -51,7 +51,7 @@ class ClientTradeModel extends BaseModel {
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
         if (filter_data && filter_data.start_date && filter_data.end_date) {
-            query += ` AND DATE(pti.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
+            query += ` AND DATE(ptp.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
         }
 
         search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? || c.client_code LIKE ? )  ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
@@ -72,9 +72,9 @@ class ClientTradeModel extends BaseModel {
                 LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pt.organization_id = ?`;
 
-        // filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
-        // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 
         query+=` GROUP BY pt.client_id `;
 
