@@ -85,19 +85,18 @@ class ClientTradeModel extends BaseModel {
         let parameters=[]
         parameters.push(organization_id)
         let query =`SELECT 
-                COUNT(DISTINCT pt.client_id) as total_client_count,
+                COUNT(DISTINCT pft.client_id) as total_client_count,
                 SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
                 SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
                 SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
-                FROM pre_trades pt
-                LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
-                WHERE pt.organization_id = ?`;
+                FROM pre_trade_proofs pft 
+                WHERE pft.organization_id = ?`;
 
         // filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
        // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 
-        query+=` GROUP BY pt.organization_id `;
+        query+=` GROUP BY pft.organization_id `;
 
         return await this._executeQuery(query, parameters)
     }
