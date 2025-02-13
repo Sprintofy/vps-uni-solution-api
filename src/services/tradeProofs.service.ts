@@ -10,9 +10,9 @@ import tradeProofsModel from '../models/tradeProofs.model';
 import clientModel from "../models/client.model";
 import fileService from './common/file.service';
 import {executablePath} from "puppeteer";
+import emailReadService from'./emailRead.service';
 const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
-const emailReadService = require("./emailRead.service");
 
 const fetch_all_clients_proofs = async (req: any) => {
     try {

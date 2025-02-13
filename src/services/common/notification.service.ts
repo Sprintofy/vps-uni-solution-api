@@ -30,8 +30,7 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
                 </head>
                 <body>
                <p>Dear ${client.client_name},</p>
-               <p>As discussed, this is a pre-trade confirmation for your client code with Rainmakers Broking House.
-                Please find the details below:</p>
+               <p>As per your instructions this is a pre-trade confirmation for your client code. Please find the details below:</p>
                 <h2>Client Information</h2>
                   <table>
                     <tr>
@@ -75,6 +74,7 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
         </tbody>
       </table>
       <div>
+      <p>Kindly reply to this email to  execute the above mentioned trades at our end. </p>
       <p></p>
       <p>Best Regards,</p>
       ${organizations_config[0].email_regards}
