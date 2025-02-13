@@ -86,12 +86,13 @@ const download_all_email = async (req: any) => {
         // Fetch all trade proof URLs
         const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls_email(1,req.query.start_date,req.query.end_date);
 
-
+        console.log(all_emails)
         const downloadedFiles: string[] = [];
         const create_excel_data: any[] = []; // Ensure it's initialized as an array
 
         // Download each file
         for (const email of all_emails) {
+            console.log(email)
             const fileName = `${email.client_code}_${email.pre_trade_proof_id}_${moment(email.created_date).format('DDMMYYYY')}.pdf`;
             const localFilePath = path.join(uploadDir, fileName);
             try {
