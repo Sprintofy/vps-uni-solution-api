@@ -16,7 +16,7 @@ const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 const fetch_all_clients_proofs = async (req: any) => {
     try {
-        emailReadService.read_email(req);
+        // emailReadService.read_email(req);
         const clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_all_clients_proofs_count(req.body.client_id,req.body.filterData,req.body.query || "");
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query || "")
@@ -36,7 +36,7 @@ const fetch_all_clients_proofs = async (req: any) => {
 
 const fetch_all_clients_trades_logs = async (req: any) => {
     try {
-        emailReadService.read_email(req);
+        //emailReadService.read_email(req);
         const clients = await tradeProofsModel.fetch_all_clients_trades_logs(1,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_all_clients_trades_logs_count(1,req.body.query || "");
         return {
@@ -51,7 +51,7 @@ const fetch_all_clients_trades_logs = async (req: any) => {
 
 const fetch_trades_details_by_client_id = async(req:any)=> {
     try {
-        emailReadService.read_email(req);
+        // emailReadService.read_email(req);
         const clients = await tradeProofsModel.fetch_trade_by_client(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
         const total = await tradeProofsModel.fetch_trade_by_client_count(req.body.client_id,req.body.filterData,req.body.query || "");
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query)
@@ -173,7 +173,7 @@ const download_all_pdf = async (req: any) => {
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
         // Fetch all trade proof URLs
-        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1,req.query.start_date,req.query.end_date);
+        const all_pdfs = await tradeProofsModel.fetch_all_trade_proof_urls(1,req.query.start_date || null,req.query.end_date || null);
 
         const downloadedFiles: string[] = [];
         const create_excel_data: any[] = []; // Ensure it's initialized as an array

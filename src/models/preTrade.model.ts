@@ -66,7 +66,7 @@ class ClientTradeModel extends BaseModel {
                 pt.client_id,
                 COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
                 SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
-                SUM(CASE WHEN  pft.is_email_received = 1 THEN 1 ELSE 0 END )  as total_email_received,
+                SUM(CASE WHEN  pft.email_url IS NOT NULL  THEN 1 ELSE 0 END )  as total_email_received,
                 SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
                 FROM pre_trades pt
                 LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
@@ -87,7 +87,7 @@ class ClientTradeModel extends BaseModel {
         let query =`SELECT 
                 COUNT(DISTINCT pt.client_id) as total_client_count,
                 SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
-                SUM(CASE WHEN  pft.is_email_received = 1 THEN 1 ELSE 0 END )  as total_email_received,
+                SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
                 SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
                 FROM pre_trades pt
                 LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
