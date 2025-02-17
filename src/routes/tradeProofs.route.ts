@@ -20,9 +20,9 @@ router.get('/download-all-client-pdf',celebrate(tradeProofsSchema.download_all_c
 
 router.get('/read-email',tradeProofsController.read_email);
 
-// router.get('/auth-url',tradeProofsController.generateAuthUrlC);
+router.get('/auth-url',tradeProofsController.generateAuthUrlC);
 //
-// router.get('/oauth/callback',tradeProofsController.exchangeCodeForTokensC);
+router.get('/oauth/callback',tradeProofsController.exchangeCodeForTokensC);
 //
 // router.get('/read-email-m',tradeProofsController.read_email_m);
 //

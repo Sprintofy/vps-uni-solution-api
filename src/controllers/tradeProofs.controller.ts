@@ -5,6 +5,7 @@ import IController from '../appConfigs/utilities/IController';
 import MESSAGES from '../common/messages/messages';
 import tradeProofsService from '../services/tradeProofs.service';
 import readEmailService from '../services/emailRead.service';
+import emailService from '../services/utilities/email.service';
 const LOGGER = new (require('../appConfigs/utilities/logger').default)('roleController.ts');
 
 
@@ -112,39 +113,42 @@ const read_email: IController = async (req: any, res: any) => {
     }
 }
 
-// const generateAuthUrlC: IController = async (req: any, res: any) => {
-//     try {
-//         const clientId = req.query.clientId as string;
-//         if (!clientId)
-//         apiResponse.error(res, httpStatusCodes.BAD_REQUEST, "Client ID is required", null);
+
+export const generateAuthUrlC: IController = async (req: any, res: any) => {
+    try {
+        const clientId = req.query.clientId as string;
+        if (!clientId)
+        apiResponse.error(res, httpStatusCodes.BAD_REQUEST, "Client ID is required", null);
+
+        const authUrl = await generateAuthUrl(clientId);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, authUrl)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
 //
-//         const authUrl = await generateAuthUrl(clientId);
-//         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, authUrl)
-//     } catch (error: any) {
-//         if (error instanceof Error) {
-//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
-//         } else {
-//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
-//         }
-//     }
-// }
-//
-// const exchangeCodeForTokensC: IController = async (req: any, res: any) => {
-//     try {
-//         const { clientId, code } = req.query;
-//         if (!clientId || !code)
-//         apiResponse.error(res, httpStatusCodes.BAD_REQUEST,  "Missing clientId or code", null);
-//
-//         const tokens = await exchangeCodeForTokens(code as string);
-//         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, tokens)
-//     } catch (error: any) {
-//         if (error instanceof Error) {
-//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
-//         } else {
-//             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
-//         }
-//     }
-// }
+
+export const exchangeCodeForTokensC: IController = async (req: any, res: any) => {
+    try {
+        const { clientId, code } = req.query;
+        if (!clientId || !code)
+        apiResponse.error(res, httpStatusCodes.BAD_REQUEST,  "Missing clientId or code", null);
+
+        const tokens = await exchangeCodeForTokens(code as string);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, tokens)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
+
 //
 // const read_email_m: IController = async (req: any, res: any) => {
 //     try {
@@ -209,4 +213,7 @@ export default {
     download_all_email_by_client:download_all_email_by_client,
 
     read_email: read_email,
+    exchangeCodeForTokensC:exchangeCodeForTokensC,
+    generateAuthUrlC:generateAuthUrlC
+
 }

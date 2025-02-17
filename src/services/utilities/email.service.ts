@@ -5,6 +5,8 @@ import organizationConfigModel from '../../models/organizationConfig.model'
 import { google } from "googleapis";
 import CONFIGS from "../../config"
 import path from "path";
+import axios from 'axios';
+
 
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 
@@ -131,26 +133,26 @@ const readOrganizationWiseEmail = async (organization_id: any, mailOptions: any)
 // Google Auth Code
 
 // Generate OAuth URL
-const generateAuthUrl = async (organization_id: string)=> {
+export const generateAuthUrl = async (organization_id: string)=> {
     const oAuth2Client = new google.auth.OAuth2(CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID, CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE, CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]);
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: "offline",
         scope: SCOPES,
         prompt: "consent",
-        redirect_uri: CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0],
+        redirect_uri: CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[1],
     });
     return authUrl;
 }
 
 // Exchange Code for Tokens
-const exchangeCodeForTokens= async(code:any) => {
-    const oAuth2Client = new google.auth.OAuth2( CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID, CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE, CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]);
+export const exchangeCodeForTokens= async(code:any) => {
+    const oAuth2Client = new google.auth.OAuth2( CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID, CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE, CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[1]);
     const { tokens } = await oAuth2Client.getToken(code);
     return tokens;
 }
 
 // Authenticate a client using saved tokens
-const authenticateGoogleAuth = async (organization_id: number) => {
+ const authenticateGoogleAuth = async (organization_id: number) => {
     try {
         // const token = await generateGoogleAuthTokens('code')
         const oAuth2Client = new google.auth.OAuth2(CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID, CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE, CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]);
@@ -165,9 +167,58 @@ const authenticateGoogleAuth = async (organization_id: number) => {
     }
 }
 
+
+
+
+
+const authenticateGoogleAuth2 = async (organization_id: number) => {
+  try {
+    // Create OAuth2 client
+    const oAuth2Client = new google.auth.OAuth2(
+      CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID,
+      CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE,
+      CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]
+    );
+
+        // Make a POST request to get a new access token using the refresh token
+        const tokenResponse:any = await axios.post('https://oauth2.googleapis.com/token', {
+            client_id: CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID,
+            client_secret: CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE,
+            refresh_token: CONFIGS.GOOGLE_AUTH.WEB.REFRESH_TOKEN,
+            grant_type: 'refresh_token',
+          });
+
+         const { access_token } = tokenResponse.data;
+
+
+        oAuth2Client.setCredentials({
+        access_token,
+        refresh_token: CONFIGS.GOOGLE_AUTH.WEB.REFRESH_TOKEN,
+        });
+
+    return oAuth2Client;
+  } catch (error: any) {
+    console.error('Error authenticating Google client:', error);
+
+    // Handle invalid_grant error
+    if (
+      error.response &&
+      error.response.data &&
+      error.response.data.error === 'invalid_grant'
+    ) {
+      console.error('Refresh token expired or revoked. Re-authentication required.');
+      throw new Error('Refresh token expired. Please log in again.');
+    }
+
+    throw new Error('Client not authenticated. Please log in.');
+  }
+};
+
+
+
 export default {
 
     sendOrganizationWiseEmail: sendOrganizationWiseEmail,
     readOrganizationWiseEmail: readOrganizationWiseEmail,
-    authenticateGoogleAuth:authenticateGoogleAuth
+    authenticateGoogleAuth:authenticateGoogleAuth2
 };
