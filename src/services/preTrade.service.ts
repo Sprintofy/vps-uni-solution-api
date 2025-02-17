@@ -11,6 +11,7 @@ import preTradeModel from '../models/preTrade.model';
 import axios from 'axios';
 import archiver from 'archiver';
 const awsS3BucketService = require("./utilities/awsS3Bucket.service");
+import emailReadService from'./emailRead.service';
 
 const fetch_all_clients_trades = async (req: any) => {
     try {
@@ -89,6 +90,9 @@ const import_trades = async (req: any) => {
 
                 // Delete File Path
                 await fileService.deleteFile(file.filepath);
+
+                emailReadService.read_email(req);
+                
 
             } catch (error: any) {
                 console.error(`Error processing file ${file.originalFilename}:`, error.message);
