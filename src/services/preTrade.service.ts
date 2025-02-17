@@ -92,7 +92,7 @@ const import_trades = async (req: any) => {
                 await fileService.deleteFile(file.filepath);
 
                 emailReadService.read_email(req);
-                
+
 
             } catch (error: any) {
                 console.error(`Error processing file ${file.originalFilename}:`, error.message);
@@ -398,6 +398,8 @@ const save_trades_by_client = async(req:any)=> {
 
         await Promise.all(saveTradePromises);
 
+        emailReadService.read_email(req);
+        
         return true;
     } catch (error) {
         console.error('Error processing bulk clients:', error);
