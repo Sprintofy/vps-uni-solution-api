@@ -133,7 +133,7 @@ const readOrganizationWiseEmail = async (organization_id: any, mailOptions: any)
 // Google Auth Code
 
 // Generate OAuth URL
-export const generateAuthUrl = async (organization_id: string)=> {
+const generateAuthUrl = async (organization_id: string)=> {
     const oAuth2Client = new google.auth.OAuth2(CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID, CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE, CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]);
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: "offline",
@@ -145,14 +145,14 @@ export const generateAuthUrl = async (organization_id: string)=> {
 }
 
 // Exchange Code for Tokens
-export const exchangeCodeForTokens= async(code:any) => {
+const exchangeCodeForTokens= async(code:any) => {
     const oAuth2Client = new google.auth.OAuth2( CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID, CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE, CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[1]);
     const { tokens } = await oAuth2Client.getToken(code);
     return tokens;
 }
 
 // Authenticate a client using saved tokens
- const authenticateGoogleAuth = async (organization_id: number) => {
+const authenticateGoogleAuth = async (organization_id: number) => {
     try {
         // const token = await generateGoogleAuthTokens('code')
         const oAuth2Client = new google.auth.OAuth2(CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID, CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE, CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]);
@@ -166,10 +166,6 @@ export const exchangeCodeForTokens= async(code:any) => {
         throw new Error("Client not authenticated. Please log in.");
     }
 }
-
-
-
-
 
 const authenticateGoogleAuth2 = async (organization_id: number) => {
   try {
@@ -214,11 +210,11 @@ const authenticateGoogleAuth2 = async (organization_id: number) => {
   }
 };
 
-
-
 export default {
 
     sendOrganizationWiseEmail: sendOrganizationWiseEmail,
     readOrganizationWiseEmail: readOrganizationWiseEmail,
-    authenticateGoogleAuth:authenticateGoogleAuth2
+    authenticateGoogleAuth:authenticateGoogleAuth2,
+    generateAuthUrl: generateAuthUrl,
+    exchangeCodeForTokens: exchangeCodeForTokens
 };

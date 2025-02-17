@@ -114,13 +114,13 @@ const read_email: IController = async (req: any, res: any) => {
 }
 
 
-export const generateAuthUrlC: IController = async (req: any, res: any) => {
+const generateAuthUrlC: IController = async (req: any, res: any) => {
     try {
         const clientId = req.query.clientId as string;
         if (!clientId)
         apiResponse.error(res, httpStatusCodes.BAD_REQUEST, "Client ID is required", null);
 
-        const authUrl = await generateAuthUrl(clientId);
+        const authUrl = await emailService.generateAuthUrl(clientId);
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, authUrl)
     } catch (error: any) {
         if (error instanceof Error) {
@@ -132,13 +132,12 @@ export const generateAuthUrlC: IController = async (req: any, res: any) => {
 }
 //
 
-export const exchangeCodeForTokensC: IController = async (req: any, res: any) => {
+const exchangeCodeForTokensC: IController = async (req: any, res: any) => {
     try {
         const { clientId, code } = req.query;
         if (!clientId || !code)
         apiResponse.error(res, httpStatusCodes.BAD_REQUEST,  "Missing clientId or code", null);
-
-        const tokens = await exchangeCodeForTokens(code as string);
+        const tokens = await emailService.exchangeCodeForTokens(code as string);
         apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, tokens)
     } catch (error: any) {
         if (error instanceof Error) {
