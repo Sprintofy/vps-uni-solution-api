@@ -169,12 +169,12 @@ const authenticateGoogleAuth = async (organization_id: number) => {
 
 const authenticateGoogleAuth2 = async (organization_id: number) => {
   try {
-    // Create OAuth2 client
-    const oAuth2Client = new google.auth.OAuth2(
-      CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID,
-      CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE,
-      CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]
-    );
+        // Create OAuth2 client
+        const oAuth2Client = new google.auth.OAuth2(
+        CONFIGS.GOOGLE_AUTH.WEB.CLIENT_ID,
+        CONFIGS.GOOGLE_AUTH.WEB.CLIENT_SECRETE,
+        CONFIGS.GOOGLE_AUTH.WEB.REDIRECT_URIS[0]
+        );
 
         // Make a POST request to get a new access token using the refresh token
         const tokenResponse:any = await axios.post('https://oauth2.googleapis.com/token', {
@@ -187,15 +187,11 @@ const authenticateGoogleAuth2 = async (organization_id: number) => {
          const { access_token } = tokenResponse.data;
 
 
-        oAuth2Client.setCredentials({
-        access_token,
-        refresh_token: CONFIGS.GOOGLE_AUTH.WEB.REFRESH_TOKEN,
-        });
+        oAuth2Client.setCredentials({access_token,  refresh_token: CONFIGS.GOOGLE_AUTH.WEB.REFRESH_TOKEN});
 
-    return oAuth2Client;
-  } catch (error: any) {
-    console.error('Error authenticating Google client:', error);
-
+        return oAuth2Client;
+    } catch (error: any) {
+        console.error('Error authenticating Google client:', error);
     // Handle invalid_grant error
     if (
       error.response &&
@@ -205,7 +201,6 @@ const authenticateGoogleAuth2 = async (organization_id: number) => {
       console.error('Refresh token expired or revoked. Re-authentication required.');
       throw new Error('Refresh token expired. Please log in again.');
     }
-
     throw new Error('Client not authenticated. Please log in.');
   }
 };
