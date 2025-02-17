@@ -37,8 +37,8 @@ export default {
             TOKEN_URI:"https://oauth2.googleapis.com/token",
             AUTH_PROVIDE_CERT_URL:"https://www.googleapis.com/oauth2/v1/certs",
             CLIENT_SECRETE:"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",
-            ACCESS_TOKEN:"ya29.a0AXeO80Q9WFyODenLDOlEI_Sipe_XzgU069gfq8CY06EDF_zua5V7gYIal9agXwnz1POWAdNozaAoo2NDj8W57-tGLzsCbsXQBm6ZdqvS4i5odXVrgU_E3mk-NaHPOp9IW3ZT4FS5u83BzfCPdCwx_HMz-qU9fEkxHcZWCB3RaCgYKAfISARMSFQHGX2MiQ-iuBTy66p19EjtqtfNHDA0175",
-            REFRESH_TOKEN:"1//04a5uGcPWvnrgCgYIARAAGAQSNwF-L9Ir3yqzlS-g0hA6XC9kl5enHq7K1VtynU7ofthePLYNc9Q7EXxhqvXoWl8_D4UQ4EALPmg",
+            ACCESS_TOKEN:"ya29.a0AXeO80TgoukoeJSTt-MjAjkv_O8QXsI_2YhrN0NnDJSRHrDb1gsw-gWB6UnKN1TDvhO2HnCSw8-WinH-D2cLjo6ADNkS6o8d9TsNalr6fCNWAfIVi58Hzx4BVmY4NfkEgKhSDRT7J_XcZI-EoabBPlR_fZXkiVIfpR4FtzjSaCgYKARESARMSFQHGX2MiDR9EYZSfOVgY1IWm0P31ug0175",
+            REFRESH_TOKEN:"1//04SCEUlYiLcPuCgYIARAAGAQSNwF-L9Irsw0ZhrYPWyhEwl3ybSlfALtWrTnKh_npJGhQERmELbByLMIN2NrA-rqLTyliI1thGnI",
             REDIRECT_URIS:["https://oauth2.googleapis.com/token"]
         }
     }
