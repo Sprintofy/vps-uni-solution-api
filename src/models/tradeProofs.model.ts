@@ -15,23 +15,7 @@ class TradeProofsModel extends BaseModel {
                 CASE WHEN pft.email_url IS NOT NULL THEN 1 ELSE 0 END as is_email_received, 
                 CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.email_url) as email_url, pft.email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pft.pdf_url)as pdf_url, 
                 pft.email_response, pft.status, pft.created_by, pft.updated_by,DATE_FORMAT(pft.created_date, '%Y-%m-%d') as created_date  , pft.updated_date,
-                IFNULL(
-                        JSON_EXTRACT(
-                            CAST(
-                                CONCAT(
-                                    '[',
-                                    GROUP_CONCAT(
-                                        JSON_ARRAY(
-                                            CONCAT('<p>',pt.script_name,' : ','<strong>',CASE WHEN pt.buy_or_sell = 'S' THEN 'SELL' ELSE 'BUY' END ,'</strong>','</p>' )
-                                        )
-                                    ),
-                                    ']'
-                                ) AS JSON
-                            ),
-                            '$[*][0]'
-                        ),
-                        JSON_ARRAY() 
-                    ) AS include_stocks
+                NULL AS include_stocks
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pft.client_id =  ? `;
@@ -46,6 +30,17 @@ class TradeProofsModel extends BaseModel {
         query += " LIMIT ? OFFSET ? ;";
 
         parameters.push(limit, offset);
+        console.log(query)
+        return await this._executeQuery(query, parameters)
+    }
+
+    async fetch_all_clients_proofs_include_stock(client_id:number,filter_data:any,search_text:any,limit:any,offset:any,sort:any) {
+        let parameters=[];
+        parameters.push(client_id)
+        let query =`SELECT pft.pre_trade_proof_id, pft.client_id, pft.client_code,pt.script_name, pt.buy_or_sell
+                FROM pre_trade_proofs pft
+                LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
+                WHERE pft.client_id =  ? `;
         console.log(query)
         return await this._executeQuery(query, parameters)
     }

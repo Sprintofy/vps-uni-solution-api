@@ -17,7 +17,27 @@ const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 const fetch_all_clients_proofs = async (req: any) => {
     try {
         // emailReadService.read_email(req);
-        const clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        let clients = await tradeProofsModel.fetch_all_clients_proofs(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+        const includeStocks = await tradeProofsModel.fetch_all_clients_proofs_include_stock(req.body.client_id,req.body.filterData,req.body.query || "", req.body.pageSize,(req.body.pageIndex - 1) * req.body.pageSize,req.body.sort || "");
+
+        clients = clients.map((client:any) => {
+            return {
+                ...client,
+                include_stocks: includeStocks.filter((stock:any) => stock.pre_trade_proof_id === client.pre_trade_proof_id) || []
+            };
+        });
+
+        clients = clients.map((client:any) => {
+            try {
+                client.include_stocks = client.include_stocks.map((stock:any) =>
+                    `<p>${stock.script_name} : <strong>${/s/i.test(stock.buy_or_sell) ? 'SELL' : 'BUY'}</strong></p>`
+                );
+            } catch (error) {
+                client.include_stocks = []; // Set empty array if parsing fails
+            }
+            return client;
+        });
+
         const total = await tradeProofsModel.fetch_all_clients_proofs_count(req.body.client_id,req.body.filterData,req.body.query || "");
         const statistics = await tradeProofsModel.fetch_all_clients_proofs_statistics(req.body.client_id,req.body.filterData,req.body.query || "")
         return {
