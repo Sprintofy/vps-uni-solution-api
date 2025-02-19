@@ -212,6 +212,9 @@ const read_email = async (req: any) => {
         // todo fetch organizations
         const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1);
 
+        if(!results.length) {
+            return true;
+        }
 
         const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
 
@@ -230,7 +233,7 @@ const read_email = async (req: any) => {
 
         const responses = await gmail.users.messages.list({
             userId: "me",
-            q: `subject:"Pre Trade Confirmation"`,
+            q: `subject:"Pre Trade Confirmation" after:${moment().format('YYYY-MM-DD')}`,
         });
 
         if(!responses.data.resultSizeEstimate) {
@@ -336,10 +339,6 @@ const read_email = async (req: any) => {
         // );
 
         // console.log("finalThread",finalThread)
-
-
-
-
 
 
 
@@ -469,10 +468,6 @@ const read_email = async (req: any) => {
                 return true;
             })
         );
-
-
-
-
 
         // // Iterate and update each object in the data structure
         // Object.values(finalThread).forEach(({ email_url, pre_trade_proof_id }) => {
