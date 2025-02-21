@@ -27,7 +27,7 @@ class ClientTradeModel extends BaseModel {
 
         search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? OR c.client_code LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
-        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += " ORDER BY  ptp.created_date DESC"
+        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += " "
 
         query += " LIMIT ? OFFSET ? ;";
         console.log(query)
