@@ -11,7 +11,7 @@ class ClientTradeModel extends BaseModel {
         let parameters=[];
         parameters.push(organization_id)
         let query =`SELECT DISTINCT c.client_id,c.organization_id,c.client_code,c.client_name,
-            c.mobile,c.email,c.client_name
+            c.mobile,c.email,c.client_name,ptp.created_date
             FROM pre_trades pt
             LEFT JOIN clients c ON c.client_id = pt.client_id
             LEFT JOIN pre_trade_proofs ptp ON pt.pre_proof_id = ptp.pre_trade_proof_id
@@ -27,7 +27,7 @@ class ClientTradeModel extends BaseModel {
 
         search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? OR c.client_code LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
-        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += " ORDER BY  pt.created_date DESC"
+        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += " ORDER BY  ptp.created_date DESC"
 
         query += " LIMIT ? OFFSET ? ;";
         console.log(query)
