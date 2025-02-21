@@ -248,9 +248,9 @@ const read_email = async (req: any) => {
         }
 
                     // Group emails by threadId
-            const threads: { [key: string]: any[] } = {};
+        const threads: { [key: string]: any[] } = {};
 
-            for (const msg of responses.data.messages) {
+        for (const msg of responses.data.messages) {
             const email: any = await gmail.users.messages.get({
                 userId: "me",
                 id: msg.id,
@@ -345,7 +345,6 @@ const read_email = async (req: any) => {
         // );
 
         // console.log("finalThread",finalThread)
-
 
 
         await Promise.all(
