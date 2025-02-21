@@ -24,7 +24,7 @@ class TradeProofsModel extends BaseModel {
 
         query += " GROUP BY pft.pre_trade_proof_id ";
 
-        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
+        sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += "pft.created_date"
 
 
         query += " LIMIT ? OFFSET ? ;";
