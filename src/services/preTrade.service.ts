@@ -20,6 +20,7 @@ const fetch_all_clients_trades = async (req: any) => {
         const client_statistics = await clientTradeModel.fetchAllClientsProofsStatistics(1,req.body.filterData,req.body.query || "");
         const organization_statistics = await clientTradeModel.fetchAllOrganizationProofsStatistics(1,req.body.filterData,req.body.query || "");
         const date_statistics = await clientTradeModel.fetchAllOrganizationDateProofsStatistics(1,req.body.filterData,req.body.query || "");
+       console.log(date_statistics)
 
         clients.forEach((client:any) => {
             const stats = client_statistics.find((stat:any) => stat.client_id === client.client_id);
@@ -37,9 +38,9 @@ const fetch_all_clients_trades = async (req: any) => {
             total_client_count: organization_statistics.length && organization_statistics[0].total_client_count || 0,
             total_email_sent: organization_statistics.length && organization_statistics[0].total_email_sent || 0,
             total_email_received: organization_statistics.length && organization_statistics[0].total_email_received || 0,
-            day_total_client_count: date_statistics.length && date_statistics[0].total_client_count || 0,
-            day_total_email_sent: date_statistics.length && date_statistics[0].total_email_sent || 0,
-            day_total_email_received: date_statistics.length && date_statistics[0].total_email_received || 0,
+            day_total_client_count: date_statistics.length && date_statistics[0].day_total_client_count || 0,
+            day_total_email_sent: date_statistics.length && date_statistics[0].day_total_email_sent || 0,
+            day_total_email_received: date_statistics.length && date_statistics[0].day_total_email_received || 0,
             data:clients,
             total:total[0].total || 0
 
