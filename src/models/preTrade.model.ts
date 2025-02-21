@@ -62,20 +62,26 @@ class ClientTradeModel extends BaseModel {
         let parameters=[]
         parameters.push(organization_id)
         let query =`SELECT 
-                pt.client_id,
-                COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
-                SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
-                SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
-                SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
-                FROM pre_trades pt
-                LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
-                WHERE pt.organization_id = ?`;
+                        pt.client_id,
+                        pt.total_trade_count as total_trades,
+                        COUNT(DISTINCT pre_trade_proof_id) as total_proof,
+                        SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
+                        SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
+                        SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
+                        FROM pre_trade_proofs pft
+                        LEFT JOIN (
+                        SELECT COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
+                                pt.client_id
+                                FROM pre_trades pt
+                                GROUP BY pt.client_id
+                        )pt ON pt.client_id = pft.client_id
+                        WHERE pft.organization_id = ? `;
 
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
 
         // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 
-        query+=` GROUP BY pt.client_id `;
+        query+=` GROUP BY pft.client_id `;
 
         return await this._executeQuery(query, parameters)
     }
@@ -83,12 +89,12 @@ class ClientTradeModel extends BaseModel {
     async fetchAllOrganizationProofsStatistics(organization_id:number,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(organization_id)
-        let query =`SELECT 
+        let query =`SELECT
                 COUNT(DISTINCT pft.client_id) as total_client_count,
                 SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
                 SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
                 SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
-                FROM pre_trade_proofs pft 
+                FROM pre_trade_proofs pft
                 WHERE pft.organization_id = ?`;
 
         // filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
@@ -103,12 +109,12 @@ class ClientTradeModel extends BaseModel {
     async fetchAllOrganizationDateProofsStatistics(organization_id:number,filter_data:any,search_text:any) {
         let parameters=[]
         parameters.push(organization_id)
-        let query =`SELECT 
+        let query =`SELECT
                 COUNT(DISTINCT pft.client_id) as day_total_client_count,
                 SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as day_total_email_sent,
                 SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as day_total_email_received,
                 SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as day_total_pdf_generated_count
-                FROM pre_trade_proofs pft 
+                FROM pre_trade_proofs pft
                 WHERE pft.organization_id = ?`;
 
         // filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
@@ -173,8 +179,8 @@ class ClientTradeModel extends BaseModel {
         let parameters=[];
         parameters.push(client_id)
         let query =`SELECT c.client_id,c.organization_id,c.client_code,c.client_name,
-            c.mobile,c.email,pti.pre_trade_info_id, pti.pre_tades_file_id, pti.exchange_code, pti.buy_or_sell, 
-            pti.product, pti.script_name, pti.quantity, pti.lots, pti.order_type, pti.price, pti.discounted_quantity, 
+            c.mobile,c.email,pti.pre_trade_info_id, pti.pre_tades_file_id, pti.exchange_code, pti.buy_or_sell,
+            pti.product, pti.script_name, pti.quantity, pti.lots, pti.order_type, pti.price, pti.discounted_quantity,
             pti.trigger_price, pti.order_life, pti.gtd_value, pti.created_date,ptf.original_file_name
             FROM pre_trades_info pti
             LEFT JOIN clients c ON c.client_id = pti.client_id
@@ -218,9 +224,9 @@ class ClientTradeModel extends BaseModel {
     /************** pre trade proofs *****************/
 
     async fetch_trade_proof_by_client_id(client_is: number) {
-        const query = `select 
-        pre_trade_proof_id, client_id, client_code, organization_id, 
-        is_email_sent, is_email_received, email_url, email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url, 
+        const query = `select
+        pre_trade_proof_id, client_id, client_code, organization_id,
+        is_email_sent, is_email_received, email_url, email_proof, CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url,
         email_response, status, created_by, updated_by, created_date, updated_date
         FROM pre_trade_proofs where client_id =  ? `;
         return await this._executeQuery(query, [client_is]);
@@ -228,9 +234,9 @@ class ClientTradeModel extends BaseModel {
 
 
     async fetch_all_trade_proof_urls() {
-        const query = `select 
+        const query = `select
         pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url,
-        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',email_url) as email_url     
+        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',email_url) as email_url
         FROM pre_trade_proofs`;
         return await this._executeQuery(query, []);
     }
@@ -238,9 +244,9 @@ class ClientTradeModel extends BaseModel {
 
 
     async fetch_all_trade_proof_urls_by_client_id(client_id:number) {
-        const query = `select 
+        const query = `select
         pre_trade_proof_id, client_code ,created_date ,  CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url,
-        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',email_url) as email_url     
+        CONCAT('${CONFIGS.AWS.S3.BASE_URL}',email_url) as email_url
         FROM pre_trade_proofs where client_id = ?`;
         return await this._executeQuery(query, [client_id]);
     }

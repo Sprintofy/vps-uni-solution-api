@@ -25,11 +25,13 @@ const fetch_all_clients_trades = async (req: any) => {
         clients.forEach((client:any) => {
             const stats = client_statistics.find((stat:any) => stat.client_id === client.client_id);
             if (stats) {
-                client.total_trades = 0;
+                client.total_trades = stats.total_trades ||0 ;
+                client.total_proof = stats.total_proof || 0;
                 client.total_email_sent = stats.total_email_sent || 0;
                 client.total_email_received = stats.total_email_received || 0;
             } else {
                 client.total_trades =  0;
+                client.total_proof = 0;
                 client.total_email_sent =  0;
                 client.total_email_received =  0;
             }
