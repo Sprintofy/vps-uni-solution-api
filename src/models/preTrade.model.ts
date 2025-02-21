@@ -25,15 +25,14 @@ class ClientTradeModel extends BaseModel {
             query += ` AND DATE(ptp.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
         }
 
-        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? || c.client_code LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
+        search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND ( c.client_name LIKE ? OR c.client_code LIKE ? ) ", parameters.push('%' + search_text + '%','%' + search_text + '%')):""
 
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += ""
 
         query += " LIMIT ? OFFSET ? ;";
-       console.log(query)
+        console.log(query)
         parameters.push(limit, offset);
-
-
+        
         return await this._executeQuery(query, parameters)
     }
 
