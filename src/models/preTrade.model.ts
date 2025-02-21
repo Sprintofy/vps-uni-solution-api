@@ -65,7 +65,7 @@ class ClientTradeModel extends BaseModel {
                 pt.client_id,
                 COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
                 SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
-                SUM(CASE WHEN  pft.email_url IS NOT NULL  THEN 1 ELSE 0 END )  as total_email_received,
+                SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
                 SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
                 FROM pre_trades pt
                 LEFT JOIN pre_trade_proofs pft ON pt.pre_proof_id = pft.pre_trade_proof_id
@@ -99,6 +99,31 @@ class ClientTradeModel extends BaseModel {
 
         return await this._executeQuery(query, parameters)
     }
+
+    async fetchAllOrganizationDateProofsStatistics(organization_id:number,filter_data:any,search_text:any) {
+        let parameters=[]
+        parameters.push(organization_id)
+        let query =`SELECT 
+                COUNT(DISTINCT pft.client_id) as day_total_client_count,
+                SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as day_total_email_sent,
+                SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as day_total_email_received,
+                SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as day_total_pdf_generated_count
+                FROM pre_trade_proofs pft 
+                WHERE pft.organization_id = ?`;
+
+        // filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+
+
+        if (filter_data && filter_data.start_date && filter_data.end_date) {
+            query += ` AND DATE(pft.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
+        }
+        // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
+
+        query+=` GROUP BY pft.organization_id `;
+
+        return await this._executeQuery(query, parameters)
+    }
+
 
     async saveClientTradeInfo(data: any) {
         const query = `INSERT INTO client_pre_trade_info SET ? ;`;

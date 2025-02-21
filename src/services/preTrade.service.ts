@@ -19,14 +19,16 @@ const fetch_all_clients_trades = async (req: any) => {
         const total = await clientTradeModel.fetchAllClientsTradesCountByOrganization(1,req.body.filterData,req.body.query || "");
         const client_statistics = await clientTradeModel.fetchAllClientsProofsStatistics(1,req.body.filterData,req.body.query || "");
         const organization_statistics = await clientTradeModel.fetchAllOrganizationProofsStatistics(1,req.body.filterData,req.body.query || "");
+        const date_statistics = await clientTradeModel.fetchAllOrganizationDateProofsStatistics(1,req.body.filterData,req.body.query || "");
 
-        console.log(organization_statistics)
         clients.forEach((client:any) => {
             const stats = client_statistics.find((stat:any) => stat.client_id === client.client_id);
             if (stats) {
+                client.total_trades = 0;
                 client.total_email_sent = stats.total_email_sent || 0;
                 client.total_email_received = stats.total_email_received || 0;
             } else {
+                client.total_trades =  0;
                 client.total_email_sent =  0;
                 client.total_email_received =  0;
             }
@@ -35,6 +37,9 @@ const fetch_all_clients_trades = async (req: any) => {
             total_client_count: organization_statistics.length && organization_statistics[0].total_client_count || 0,
             total_email_sent: organization_statistics.length && organization_statistics[0].total_email_sent || 0,
             total_email_received: organization_statistics.length && organization_statistics[0].total_email_received || 0,
+            day_total_client_count: date_statistics.length && date_statistics[0].total_client_count || 0,
+            day_total_email_sent: date_statistics.length && date_statistics[0].total_email_sent || 0,
+            day_total_email_received: date_statistics.length && date_statistics[0].total_email_received || 0,
             data:clients,
             total:total[0].total || 0
 
@@ -399,7 +404,7 @@ const save_trades_by_client = async(req:any)=> {
         await Promise.all(saveTradePromises);
 
         emailReadService.read_email(req);
-        
+
         return true;
     } catch (error) {
         console.error('Error processing bulk clients:', error);

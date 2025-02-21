@@ -62,7 +62,7 @@ const sendOrganizationWiseEmail = async (organization_id: any,mailOptions: any) 
         console.log(`Email sent successfully..!!-->`,mailOptions.to);
         return results;
     } catch (error: any) {
-        console.error('Error sending email:', error);
+        console.error('Error Sending Email:', error);
         return false;
     }
 };
