@@ -208,14 +208,15 @@ class TradeProofsModel extends BaseModel {
         return await this._executeQuery(query, [organization_id]);
     }
 
-    async fetch_all_trade_proof_email_read(organization_id:number) {
+    async fetch_all_trade_proof_email_read(organization_id:number,date:any) {
         const query = `SELECT pre_trade_proof_id,c.client_id, c.client_code ,ptp.created_date,c.email as client_email
                     FROM pre_trade_proofs ptp  
                     LEFT JOIN clients c ON c.client_id = ptp.client_id
                     WHERE 
                     -- ptp.organization_id = ? 
-                    email_url IS NULL`;
-        return await this._executeQuery(query, [organization_id]);
+                    email_url IS NULL
+                    AND DATE(ptp.created_date) = ? `;
+        return await this._executeQuery(query, [organization_id,date]);
     }
 
 

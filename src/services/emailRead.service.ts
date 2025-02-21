@@ -209,8 +209,11 @@ const read_email_imap = async (req: any) => {
 
 const read_email = async (req: any) => {
     try {
+        const date = moment().format('YYYY-MM-DD'); // Get today's date
+        const subject = "Pre Trade Confirmation"; // Replace with the required subject
+
         // todo fetch organizations
-        const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1);
+        const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
 
         if(!results.length) {
             return true;
@@ -227,13 +230,16 @@ const read_email = async (req: any) => {
         const auth = await emailService.authenticateGoogleAuth(1);
 
         const gmail: any = google.gmail({ version: "v1", auth });
+        //const today = moment('2025-02-20').format("YYYY-MM-DD"); // Get today's date
+        //const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
 
-        const date = new Date(moment().format('YYYY-MM-DD'));
-        const timestamp = Math.floor(date.getTime() / 1000);
+        const timeStamp = moment().subtract(5, "minutes").unix();  // Get the current Unix timestamp in seconds
+        const beforeTime = moment("YYYY-MM-DD").unix();
 
         const responses = await gmail.users.messages.list({
             userId: "me",
-            q: `subject:"Pre Trade Confirmation" after:${moment().format('YYYY-MM-DD')}`,
+            q: `subject:"${subject}" after:${timeStamp}`
+            //q: `subject:"${subject}" after:${timeStamp} before:${beforeTime}`
         });
 
         if(!responses.data.resultSizeEstimate) {
