@@ -29,6 +29,10 @@ const fetch_all_clients_trades = async (req: any) => {
                 client.total_proof = stats.total_proof || 0;
                 client.total_email_sent = stats.total_email_sent || 0;
                 client.total_email_received = stats.total_email_received || 0;
+                client.today_trade = stats.today_trade ||0 ;
+                client.today_email_sent = stats.today_email_sent || 0;
+                client.today_email_received = stats.today_email_received || 0;
+                client.today_pdf_generated_count = stats.today_pdf_generated_count || 0;
             } else {
                 client.total_trades =  0;
                 client.total_proof = 0;
@@ -45,7 +49,6 @@ const fetch_all_clients_trades = async (req: any) => {
             day_total_email_received: date_statistics.length && date_statistics[0].day_total_email_received || 0,
             data:clients,
             total:total[0].total || 0
-
         }
     } catch (error: any) {
         console.error("Error importing clients:", error.message);

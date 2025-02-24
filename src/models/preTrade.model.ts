@@ -64,17 +64,28 @@ class ClientTradeModel extends BaseModel {
         let query =`SELECT 
                         pt.client_id,
                         pt.total_trade_count as total_trades,
+                        ptd.total_trade_count as today_trade,
                         COUNT(DISTINCT pre_trade_proof_id) as total_proof,
-                        SUM(CASE WHEN  pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
-                        SUM(CASE WHEN  pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
-                        SUM(CASE WHEN  pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count
+                        SUM(CASE WHEN pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as total_email_sent,
+                        SUM(CASE WHEN pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as total_email_received,
+                        SUM(CASE WHEN pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as total_pdf_generated_count,
+                        SUM(CASE WHEN DATE(pft.created_date) = '${filter_data.start_date}' AND pft.is_email_sent = 1 THEN 1 ELSE 0 END )  as today_email_sent,
+                        SUM(CASE WHEN DATE(pft.created_date) = '${filter_data.start_date}' AND pft.email_url IS NOT NULL THEN 1 ELSE 0 END )  as today_email_received,
+                        SUM(CASE WHEN DATE(pft.created_date) = '${filter_data.start_date}' AND pft.pdf_url IS NOT NULL THEN 1 ELSE 0 END )  as today_pdf_generated_count
                         FROM pre_trade_proofs pft
                         LEFT JOIN (
                         SELECT COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
                                 pt.client_id
                                 FROM pre_trades pt
                                 GROUP BY pt.client_id
-                        )pt ON pt.client_id = pft.client_id
+                        ) pt ON pt.client_id = pft.client_id
+                        LEFT JOIN (
+                        SELECT COUNT(DISTINCT pt.pre_trade_id) as total_trade_count,
+                                pt.client_id
+                                FROM pre_trades pt
+                                WHERE DATE(pt.created_date) = '${filter_data.start_date}'
+                                GROUP BY pt.client_id
+                        ) ptd ON ptd.client_id = pft.client_id
                         WHERE pft.organization_id = ? `;
 
         filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
@@ -82,7 +93,7 @@ class ClientTradeModel extends BaseModel {
         // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 
         query+=` GROUP BY pft.client_id `;
-
+        console.log(query)
         return await this._executeQuery(query, parameters)
     }
 
