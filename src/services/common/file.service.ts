@@ -150,6 +150,29 @@ const uploadPdfFileToS3Bucket = async (organization_id:any,body: any) => {
     }
 };
 
+const uploadSampleEmailPdfFileToS3Bucket = async (organization_id:any,body: any) => {
+    try {
+        // Process the form to get the image information
+        const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+organization_id+'/sample_email_pdfs' ;
+
+        // Check if "folder" exists on S3 by listing objects with a specific prefix
+        const isFolderExists = await awsS3Bucket.isFolderExists(s3FolderPath);
+
+        // Create "folder" (simulate directory) if it doesn't exist
+        if (!isFolderExists) {
+            const createFolder = await awsS3Bucket.createFolder(s3FolderPath);
+        }
+
+        // Upload the file to the specified "folder" in S3
+        const fileStream = fs.createReadStream(body.file_path);
+        const result = await awsS3Bucket.uploadFile(fileStream, s3FolderPath, body.file_name);
+        return result.key;
+    } catch (error:any) {
+        console.error(`Error processing form or uploading file: ${error.message}`);
+        throw error;
+    }
+};
+
 const uploadZipFileToS3Bucket = async (organization_id:any,body: any) => {
     try {
         // Process the form to get the image information
@@ -226,5 +249,6 @@ export default {
     createZipFile: createZipFile,
     uploadZipFileToS3Bucket: uploadZipFileToS3Bucket,
     uploadPdfFileToS3Bucket: uploadPdfFileToS3Bucket,
-    uploadEmailFileToS3Bucket: uploadEmailFileToS3Bucket
+    uploadEmailFileToS3Bucket: uploadEmailFileToS3Bucket,
+    uploadSampleEmailPdfFileToS3Bucket: uploadSampleEmailPdfFileToS3Bucket
 };

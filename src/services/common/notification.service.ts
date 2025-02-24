@@ -5,6 +5,7 @@ import path from 'path';
 import CONSTANTS from '../../common/constants/constants';
 import moment from "moment/moment";
 import emailService from "../utilities/email.service";
+import tradeProofModel from "../../models/tradeProofs.model";
 const awsS3BucketService = require("../utilities/awsS3Bucket.service");
 import organizationConfigModel from '../../models/organizationConfig.model'
 import fileService from "./file.service";
@@ -89,8 +90,120 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
         subject:organizations_config[0].email_subject,
         html: emailBody,
     };
+    const email_response = await emailService.sendOrganizationWiseEmail(organization_id,mailOptions);
+    if(email_response) {
+        await tradeProofModel.update_pre_trade_proofs({is_email_sent:1,email_response:JSON.stringify(email_response)},client.pre_proof_id)
+    } else {
+        console.error("Email send to Failed..",client.email,"Error --->",email_response);
+    }
+    return true;
+}
 
-    return await emailService.sendOrganizationWiseEmail(organization_id,mailOptions);
+const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:any)=> {
+
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
+
+    let emailBody = `<!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                        .container { width: 90%; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+                        .header { font-size: 20px; font-weight: bold; color: #444; margin-bottom: 10px; }
+                        .info { margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                        table, th, td { border: 1px solid #ddd; }
+                        th, td { padding: 8px 12px; text-align: left; }
+                        th { background-color: #f4f4f4; }
+                        .footer { margin-top: 20px; font-size: 14px; color: #777; }
+                    </style>
+                </head>
+                <body>
+               <p>Dear ${client.client_name},</p>
+               <p>As per your instructions this is a pre-trade confirmation for your client code. Please find the details below:</p>
+                <h2>Client Information</h2>
+                  <table>
+                    <tr>
+                      <td><strong>Client Code</strong></td>
+                      <td>${client.client_code}</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Name</strong></td>
+                      <td>${client.client_name}</td>
+                    </tr>
+                  </table>
+                  <h2>Trade Orders:</h2>
+                <table>
+        <thead>
+          <tr>
+            <th>Exchange Code</th>
+            <th>Buy/Sell</th>
+            <th>Product</th>
+            <th>Script Name</th>
+            <th>Quantity</th>
+            <th>Order Type</th>
+            <th>Price</th>
+            <th>Trigger Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${client.unique_trade_info
+        .map((trade:any) => `
+          <tr>
+            <td>${trade.exchange_code}</td>
+            <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
+            <td>${trade.product}</td>
+            <td>${trade.script_name}</td>
+            <td>${trade.quantity}</td>
+            <td>${trade.order_type}</td>
+            <td>${trade.price}</td>
+            <td>${trade.trigger_price}</td>
+          </tr>`
+        )
+        .join('')}
+        </tbody>
+      </table>
+      <div>
+      <p>Kindly reply to this email to  execute the above mentioned trades at our end. </p>
+      <p></p>
+      <p>Best Regards,</p>
+      ${organizations_config[0].email_regards}
+      </div>
+    </div>
+  </body>
+  </html>`;
+
+    // Launch Puppeteer to generate PDF
+    // const browser = await puppeteer.launch({
+    //     executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
+    //     headless: true,
+    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
+    // });
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+    });
+    const page = await browser.newPage();
+
+    // Set HTML content
+    await page.setContent(emailBody);
+
+    // Generate PDF
+
+    const file_name = `${client.client_code}_sample_email_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+    const uploadDir = path.join(__dirname, '../../../../public/upload'); // Create directory path relative to the current script
+    const file_path = path.join(uploadDir, file_name);
+
+
+    await page.pdf({ path: file_path, format: 'A4', printBackground: true });
+    // Close the browser
+    await browser.close();
+
+    const aws_s3_url = await fileService.uploadSampleEmailPdfFileToS3Bucket(organization_id,{file_name,file_path})
+
+    fs.unlinkSync(file_path);
+    return aws_s3_url;
+
 }
 
 const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
@@ -331,5 +444,6 @@ export default {
     sendPreTradeEmailToClientOrganizationWise: sendPreTradeEmailToClientOrganizationWise,
     readPreTradeEmailToClientOrganizationWise: readPreTradeEmailToClientOrganizationWise,
     generatePreTradeClientWise: generatePreTradeClientWise,
-    generatePreTradeEmailPdfClientWise:generatePreTradeEmailPdfClientWise
+    generatePreTradeEmailPdfClientWise:generatePreTradeEmailPdfClientWise,
+    generateSampleEmailPreTradeClientWise:generateSampleEmailPreTradeClientWise
 };
