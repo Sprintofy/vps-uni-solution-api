@@ -487,6 +487,286 @@ const read_email = async (req: any) => {
 
 };
 
+const read_email_auto = async (req: any) => {
+    try {
+        const date = moment().format('YYYY-MM-DD'); // Get today's date
+        const subject = "Pre Trade Confirmation_"; // Replace with the required subject
+
+        // todo fetch organizations
+        const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
+
+        if(!results.length) {
+            return true;
+        }
+
+        const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
+
+        results.forEach(({ client_email, client_code, pre_trade_proof_id }: { client_email: string; client_code: string; pre_trade_proof_id: number }) => {
+            const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
+            client_proof_info[emailKey] = { client_code, client_email: emailKey, pre_trade_proof_id };
+        });
+
+        // Authenticate client
+        const auth = await emailService.authenticateGoogleAuth(1);
+
+        const gmail: any = google.gmail({ version: "v1", auth });
+        const today = moment().format("YYYY-MM-DD"); // Get today's date
+        //const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
+
+        const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
+        const beforeTime = moment("YYYY-MM-DD").unix();
+
+        const responses = await gmail.users.messages.list({
+            userId: "me",
+            q: `subject:"${subject}" after:${today}`
+            //q: `subject:"${subject}" after:${timeStamp} before:${beforeTime}`
+        });
+
+        if(!responses.data.resultSizeEstimate) {
+            console.log("No Message Found...!")
+            return true;
+        }
+
+        // Group emails by threadId
+        const threads: { [key: string]: any[] } = {};
+
+        for (const msg of responses.data.messages) {
+            const email: any = await gmail.users.messages.get({
+                userId: "me",
+                id: msg.id,
+                format: "full",
+            });
+
+            // console.log("email --------");
+            // console.dir(email, { depth: null });
+
+            // Get headers and message-id
+            const allHeaders = email.data.payload?.headers || [];
+            const messageIdHeader = allHeaders.find((header: any) =>
+                header.name.toLowerCase() === "message-id"
+            );
+
+            threads[msg.threadId] = threads[msg.threadId] || [];
+
+            const headers = Object.fromEntries(
+                allHeaders.map((header: any) => [header.name, header.value])
+            );
+
+            // Extract the body
+            let body = "";
+            const payload = email.data.payload;
+
+            if (payload.parts && payload.parts.length) {
+                // For multipart emails
+                for (const part of payload.parts) {
+                    if (part.mimeType === "text/html" && part.body?.data) {
+                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
+                        break;
+                    } else if (part.mimeType === "text/plain" && part.body?.data) {
+                        // Fallback to text/plain if html is not found
+                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
+                    }
+                }
+            } else if (payload.body && payload.body.data) {
+                // For non-multipart emails (like email 2)
+                const decodedBody = Buffer.from(payload.body.data, "base64").toString("utf-8");
+
+                // Extract the content between <body> and </body>
+                const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                body = match ? match[1] : decodedBody;
+            }
+
+            // console.log("body  --------",body);
+
+
+            threads[msg.threadId].push({
+                id: msg.id,
+                messageId: messageIdHeader,
+                headers,
+                body,
+            });
+        }
+
+
+        console.log("threads---------",threads)
+        const extractEmailParts = (headerValue: string) => {
+            const match = headerValue.match(/(.*?)\s*<(.*)>/);
+            return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+        };
+
+        const finalThread = {} as any
+
+
+        // await Promise.all(
+        //     Object.entries(threads).map(async ([threadId, emails]) => {
+        //         finalThread[threadId] = {
+        //             thread_id : threadId,
+        //             emails: [] as any
+        //         } as any;
+        //         // Sort emails by date (oldest to newest)
+        //         emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
+        //         if(emails.length) {
+        //             const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
+        //            emails.map((email:any) => {
+        //                 const [senderName, senderEmail] = extractEmailParts(email.headers.From);
+        //                 const [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
+        //                if(client_proof_info[senderEmail]) {
+        //                    finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
+        //                    finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
+        //                    finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
+        //                    finalThread[threadId].emails = emails
+        //                }
+        //                // console.log("recipientName",recipientName,recipientEmail)
+        //                 return true
+        //             });
+        //         }
+        //         return true;
+        //     })
+        // );
+
+        // console.log("finalThread",finalThread)
+
+
+        await Promise.all(
+            Object.entries(threads).map(async ([threadId, emails]) => {
+                finalThread[threadId] = {
+                    thread_id : threadId,
+                    emails: [] as any
+                } as any;
+
+                emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
+                if(emails.length > 1) {
+                    const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
+                    let emailPart2 = ' '
+                    if(!emailPart){
+                        emailPart2 = namePart
+                    }else{
+                        emailPart2 = emailPart
+                    }
+
+
+                    let htmlContent = `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>Gmail - ${emails[0].headers.Subject}</title>
+           
+                    <style>
+            body, td, div, p, a, input { font-family: arial, sans-serif; }
+            body, td { font-size: 13px; }
+            a:link, a:active { color: #1155CC; text-decoration: none; }
+            a:hover { text-decoration: underline; cursor: pointer; }
+            img { border: 0px; }
+            pre { white-space: pre-wrap; word-wrap: break-word; max-width: 800px; overflow: auto; }
+            .logo { left: -7px; position: relative; }
+        </style>
+        </head>
+        <body>
+            <div class="bodycontainer">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr height="14px">
+                        <td width="143">
+                            <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/logo_gmail_server_1x.png" width="143" height="59" alt="Gmail" class="logo">
+                        </td>
+                        <td align="right">
+                            <font size="-1" color="#777"><b>${namePart}</b> &lt;${emailPart2}&gt;</font>
+                        </td>
+                    </tr>
+                </table>
+                <hr>
+                <div class="maincontent">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td>
+                                <font size="+1"><b>${emails[0].headers.Subject}</b></font><br>
+                                <font size="-1" color="#777">${emails.length} messages</font>
+                            </td>
+                        </tr>
+                    </table>`;
+
+                    htmlContent += emails.map((email:any) => {
+                        //console.log("inner email",email)
+                        let [senderName, senderEmail] = extractEmailParts(email.headers.From);
+                        let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
+                        //console.log("senderEmail email",senderEmail)
+                        //console.log("recipientEmail email",recipientEmail)
+
+                        // replace Email with can
+                        if (senderEmail.toLowerCase().includes("canned")) {
+                            senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
+                            // console.log("senderEmail",senderEmail)
+
+                        }
+
+                        let senderEmail2 = ' '
+                        if(senderEmail){
+                            senderEmail2 = senderEmail
+                        }else{
+                            senderEmail2 = senderName
+                        }
+
+                        if(client_proof_info[senderEmail]) {
+                            console.log("client_proof_info",client_proof_info[senderEmail])
+                            finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
+                            finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
+                            finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
+                            finalThread[threadId].emails = emails
+                        }
+
+                        return `<hr>
+                <table width="100%" cellpadding="0" cellspacing="0" class="message">
+                    <tr>
+                        <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
+                        <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="padding-bottom: 4px;">
+                            <font size="-1" class="recipient">
+                                <div>To: ${recipientName} ${recipientEmail ? `&lt;${recipientEmail}&gt;` : ''}</div>
+                            </font>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <table width="100%" cellpadding="12" cellspacing="0">
+                                <tr>
+                                    <td>
+                                        <div style="overflow: hidden;">
+                                            <font size="-1">${email.body}</font>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>`;
+                    }).join('');
+
+                    htmlContent += `</div></div></body></html>`;
+
+                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code });
+                    finalThread[threadId].email_url = email_url
+                    console.log(email_url)
+                    await tradeProofsModel.update_pre_trade_proofs({email_url:email_url},finalThread[threadId].pre_trade_proof_id);
+                }
+                return true;
+            })
+        );
+
+        // // Iterate and update each object in the data structure
+        // Object.values(finalThread).forEach(({ email_url, pre_trade_proof_id }) => {
+        //     console.log(`email_url: ${email_url}, pre_trade_proof_id: ${pre_trade_proof_id}`);
+        // });
+
+        return true;
+    } catch(error: any) {
+        console.log(error)
+        return  true;
+    }
+
+};
+
 // Function to generate PDF from HTML using Puppeteer
 const generatePDF_1 = async (htmlContent: string) => {
     // Launch Puppeteer to generate PDF
@@ -714,5 +994,6 @@ const processingThreadAndClientEmail = async (threads: any) => {
 */
 
 export default {
-    read_email:read_email
+    read_email:read_email,
+    read_email_auto:read_email_auto
 }

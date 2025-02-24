@@ -102,7 +102,7 @@ const import_trades = async (req: any) => {
                 // Delete File Path
                 await fileService.deleteFile(file.filepath);
 
-                emailReadService.read_email(req);
+                emailReadService.read_email_auto(req);
 
 
             } catch (error: any) {
@@ -419,7 +419,7 @@ const save_trades_by_client = async(req:any)=> {
         // req.body.is_email_sent = 1;
         // req.body.email_response = JSON.stringify(email_response);
 
-        emailReadService.read_email(req);
+        emailReadService.read_email_auto(req);
 
         return true;
     } catch (error) {
