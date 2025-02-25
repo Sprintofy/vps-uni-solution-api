@@ -513,12 +513,12 @@ const read_email_auto = async (req: any) => {
         const today = moment().format("YYYY-MM-DD"); // Get today's date
         //const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
 
-        const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
+        const timeStamp = moment().subtract(15, "minutes").unix();  // Get the current Unix timestamp in seconds
         const beforeTime = moment("YYYY-MM-DD").unix();
 
         const responses = await gmail.users.messages.list({
             userId: "me",
-            q: `subject:"${subject}" after:${today}`
+            q: `subject:"${subject}" after:${timeStamp}`
             //q: `subject:"${subject}" after:${timeStamp} before:${beforeTime}`
         });
 
