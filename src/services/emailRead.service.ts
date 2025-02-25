@@ -490,7 +490,7 @@ const read_email = async (req: any) => {
 const read_email_auto = async (req: any) => {
     try {
         const date = moment().format('YYYY-MM-DD'); // Get today's date
-        const subject = "Pre Trade Confirmation_"; // Replace with the required subject
+        const subject = "Pre Trade Confirmation"; // Replace with the required subject
 
         // todo fetch organizations
         const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
