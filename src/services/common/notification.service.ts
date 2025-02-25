@@ -207,6 +207,7 @@ const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:a
 }
 
 const generateSampleEmailBodyPreTradeClientWise = async(organization_id:any,client:any)=> {
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
     let emailBody = `<!DOCTYPE html>
                 <html>
                 <head>
