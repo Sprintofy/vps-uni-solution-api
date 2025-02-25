@@ -100,6 +100,19 @@ const download_all_email_by_client: IController = async (req: any, res: any) => 
     }
 }
 
+const resend_email: IController = async (req: any, res: any) => {
+    try {
+        let results = await tradeProofsService.resend_email(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
+
 const read_email: IController = async (req: any, res: any) => {
     try {
         let results = await readEmailService.read_email(req);
@@ -213,6 +226,7 @@ export default {
 
     read_email: read_email,
     exchangeCodeForTokensC:exchangeCodeForTokensC,
-    generateAuthUrlC:generateAuthUrlC
+    generateAuthUrlC:generateAuthUrlC,
+    resend_email:resend_email
 
 }

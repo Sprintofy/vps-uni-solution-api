@@ -11,6 +11,10 @@ import clientModel from "../models/client.model";
 import fileService from './common/file.service';
 import {executablePath} from "puppeteer";
 import emailReadService from'./emailRead.service';
+import emailService from "./utilities/email.service";
+import tradeProofModel from "../models/tradeProofs.model";
+import organizationConfigModel from "../models/organizationConfig.model";
+import notificationService from "./common/notification.service";
 const awsS3BucketService = require("./utilities/awsS3Bucket.service");
 
 
@@ -405,6 +409,24 @@ const download_all_email_by_client = async (req:any) => {
     }
 };
 
+const resend_email = async (req:any) => {
+    try {
+        const trade_info = await tradeProofsModel.fetch_trade_proof_Id(req.query.pre_trade_proof_id);
+
+        if(trade_info && trade_info.length) {
+
+          await notificationService.sendPreTradeSingleEmailToClient(1,trade_info[0])
+            return true;
+        } else {
+            console.log(`Email already Sent ${trade_info}`);
+            return true;
+        }
+    } catch (error: any) {
+        console.error(`Error processing download all email by client files: ${error}`);
+        throw error;
+    }
+};
+
 /*************** MYSQL CURD Operation *************/
 
 // pre_trade_proofs
@@ -460,5 +482,6 @@ export default {
     download_all_pdf: download_all_pdf,
     download_all_email: download_all_email,
     download_all_pdf_by_client: download_all_pdf_by_client,
-    download_all_email_by_client: download_all_email_by_client
+    download_all_email_by_client: download_all_email_by_client,
+    resend_email:resend_email
 }

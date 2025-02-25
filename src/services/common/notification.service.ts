@@ -515,11 +515,33 @@ const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any)
     }
 };
 
+const sendPreTradeSingleEmailToClient= async(organization_id:any,trade_info:any)=> {
+
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
+
+    const mailOptions = {
+        from: organizations_config[0].from_email,
+        to: [trade_info.client_email],
+        subject: organizations_config[0].email_subject+"_"+trade_info.client_code,
+        html: trade_info.email_sample,
+    };
+
+    const email_response = await emailService.sendOrganizationWiseEmail(organization_id,mailOptions);
+
+    if(email_response) {
+        await tradeProofModel.update_pre_trade_proofs({is_email_sent:1,email_response:JSON.stringify(email_response)},trade_info.pre_trade_proof_id)
+    } else {
+        console.error("Email send to Failed..",trade_info.email,"Error --->",email_response);
+    }
+    return true;
+}
+
 export default {
     sendPreTradeEmailToClientOrganizationWise: sendPreTradeEmailToClientOrganizationWise,
     readPreTradeEmailToClientOrganizationWise: readPreTradeEmailToClientOrganizationWise,
     generatePreTradeClientWise: generatePreTradeClientWise,
     generatePreTradeEmailPdfClientWise:generatePreTradeEmailPdfClientWise,
     generateSampleEmailPreTradeClientWise:generateSampleEmailPreTradeClientWise,
-    generateSampleEmailBodyPreTradeClientWise:generateSampleEmailBodyPreTradeClientWise
+    generateSampleEmailBodyPreTradeClientWise:generateSampleEmailBodyPreTradeClientWise,
+    sendPreTradeSingleEmailToClient:sendPreTradeSingleEmailToClient
 };
