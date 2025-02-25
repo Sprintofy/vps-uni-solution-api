@@ -333,7 +333,9 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
         if(client_info.unique_trade_info.length) {
 
             // send email to client pre-trade
-            const email_sample_url = await emailNotificationServiceService.generateSampleEmailPreTradeClientWise(client_info.organization_id,client_info)
+            // const email_sample_url = await emailNotificationServiceService.generateSampleEmailPreTradeClientWise(client_info.organization_id,client_info)
+
+            const email_sample = await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(client_info.organization_id,client_info)
 
             // pdf creation pre-trade
             const pdf_url = await emailNotificationServiceService.generatePreTradeClientWise(client_info.organization_id,client_info)
@@ -341,7 +343,7 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
             // Save pre-trade proofs and get the proof ID
             const emailProof = await save_pre_trade_proofs(req,{
                 pdf_url:pdf_url,
-                email_sample_url:email_sample_url,
+                email_sample:email_sample,
                 client_id:client_info.client_id,
                 client_code:client_info.client_code
             });
@@ -392,7 +394,9 @@ const save_trades_by_client = async(req:any)=> {
         const updatedTrades = await Promise.all(preTradeInfoPromises);
 
         // send email to client pre trade
-        req.body.email_sample_url = await emailNotificationServiceService.generateSampleEmailPreTradeClientWise(1,req.body)
+        // req.body.email_sample_url = await emailNotificationServiceService.generateSampleEmailPreTradeClientWise(1,req.body)
+
+        req.body.email_sample = await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(1,req.body)
 
 
         // pdf creation pre trade
@@ -968,6 +972,7 @@ const save_pre_trade_proofs = async(req:any,body:any)=> {
     if (body.is_email_received !== undefined && body.is_email_received !== null && body.is_email_received !== '') data.is_email_received = body.is_email_received;
     if (body.email_url !== undefined && body.email_url !== null && body.email_url !== '') data.email_url = body.email_url;
     if (body.email_sample_url !== undefined && body.email_sample_url !== null && body.email_sample_url !== '') data.email_sample_url = body.email_sample_url;
+    if (body.email_sample !== undefined && body.email_sample !== null && body.email_sample !== '') data.email_sample = body.email_sample;
     if (body.email_proof !== undefined && body.email_proof !== null && body.email_proof !== '') data.email_proof = body.email_proof;
     if (body.pdf_url !== undefined && body.pdf_url !== null && body.pdf_url !== '') data.pdf_url = body.pdf_url;
 
