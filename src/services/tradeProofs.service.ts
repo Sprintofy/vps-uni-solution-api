@@ -417,12 +417,35 @@ const resend_email = async (req:any) => {
 
           await notificationService.sendPreTradeSingleEmailToClient(1,trade_info[0])
             return true;
+
         } else {
             console.log(`Email already Sent ${trade_info}`);
             return true;
         }
     } catch (error: any) {
         console.error(`Error processing download all email by client files: ${error}`);
+        throw error;
+    }
+};
+
+const resend_email_all = async (req: any) => {
+    try {
+        const tradeInfoArray = await tradeProofsModel.fetch_trade_proof_email(req.query.organization_id || 1);
+
+        const processTradeInfo = async (tradeInfoArray: any[]) => {
+            for (const tradeInfo of tradeInfoArray) {
+                if (tradeInfo) {
+                    await notificationService.sendPreTradeSingleEmailToClient(req.query.organization_id || 1, tradeInfo);
+                    console.log(`Email sent to ${tradeInfo.client_email}`);
+                } else {
+                    console.log(`Email already sent: ${JSON.stringify(tradeInfo)}`);
+                }
+            }
+        };
+        // Call the function to process trade info
+        await processTradeInfo(tradeInfoArray);
+    } catch (error: any) {
+        console.error(`Error processing resend all emails: ${error.message}`);
         throw error;
     }
 };
@@ -483,5 +506,6 @@ export default {
     download_all_email: download_all_email,
     download_all_pdf_by_client: download_all_pdf_by_client,
     download_all_email_by_client: download_all_email_by_client,
-    resend_email:resend_email
+    resend_email:resend_email,
+    resend_email_all:resend_email_all
 }

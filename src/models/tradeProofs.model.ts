@@ -226,9 +226,21 @@ class TradeProofsModel extends BaseModel {
                     FROM pre_trade_proofs ptp  
                     LEFT JOIN clients c ON c.client_id = ptp.client_id
                     WHERE 
-                    ptp.email_url IS NULL
+                    ptp.is_email_sent = 0
                     AND ptp.pre_trade_proof_id = ? `;
         return await this._executeQuery(query, [pre_trade_proof_id]);
+    }
+
+    async fetch_trade_proof_email(organization_id:number) {
+        const query = `SELECT ptp.pre_trade_proof_id,c.client_id,
+                    c.client_code ,ptp.created_date,c.email as client_email,
+                    ptp.email_sample
+                    FROM pre_trade_proofs ptp  
+                    LEFT JOIN clients c ON c.client_id = ptp.client_id
+                    WHERE 
+                    ptp.is_email_sent = 0
+                    AND ptp.organization_id = ? `;
+        return await this._executeQuery(query, [organization_id]);
     }
 
     async fetch_all_trade_proof_urls_by_client_id(client_id:number) {
