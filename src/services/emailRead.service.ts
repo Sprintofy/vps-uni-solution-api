@@ -230,10 +230,10 @@ const read_email = async (req: any) => {
         const auth = await emailService.authenticateGoogleAuth(1);
 
         const gmail: any = google.gmail({ version: "v1", auth });
-        //const today = moment('2025-02-20').format("YYYY-MM-DD"); // Get today's date
-        //const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
+        const today = moment().format("YYYY-MM-DD"); // Get today's date
+        const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
 
-        const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
+        //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
         const beforeTime = moment("YYYY-MM-DD").unix();
 
         const responses = await gmail.users.messages.list({
