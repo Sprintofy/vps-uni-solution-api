@@ -210,10 +210,25 @@ const read_email_imap = async (req: any) => {
 const read_email = async (req: any) => {
     try {
 
-        const date = moment().format('YYYY-MM-DD');// Get today's date
-
         // Replace with the required subject
         const subject = "Pre Trade Confirmation";
+
+        let date = moment().format('YYYY-MM-DD');// Get today's date
+        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
+        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+        let query= `subject:"${subject}" after:${startTime}`
+
+        if(req.query.start_date && (moment(req.query.start_date).format("YYYY-MM-DD") != moment().format("YYYY-MM-DD"))) {
+            date = moment(req.query.start_date).format('YYYY-MM-DD'); // Format date
+            startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
+            endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+            query= `subject:"${subject}" after:${startTime} before:${endTime}`
+        }
+
+        console.log("date",date)
+        console.log("startTime",startTime)
+        console.log("endTime",endTime)
+        console.log("query",query)
 
         const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
 
@@ -232,16 +247,14 @@ const read_email = async (req: any) => {
         const auth = await emailService.authenticateGoogleAuth(1);
 
         const gmail: any = google.gmail({ version: "v1", auth });
-        const today = moment().format("YYYY-MM-DD"); // Get today's date
-        const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
+
 
         //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
         const beforeTime = moment("YYYY-MM-DD").unix();
 
         const responses = await gmail.users.messages.list({
             userId: "me",
-            q: `subject:"${subject}" after:${timeStamp}`
-            //q: `subject:"${subject}" after:${timeStamp} before:${beforeTime}`
+            q: query
         });
 
         if(!responses.data.resultSizeEstimate) {
@@ -337,7 +350,7 @@ const read_email = async (req: any) => {
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
             <meta http-equiv="X-UA-Compatible" content="IE=edge">
             <title>Gmail - ${emails[0].headers.Subject}</title>
-           
+
                     <style>
             body, td, div, p, a, input { font-family: arial, sans-serif; }
             body, td { font-size: 13px; }
