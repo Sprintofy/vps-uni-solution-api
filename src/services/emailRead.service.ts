@@ -439,7 +439,7 @@ const read_email = async (req: any) => {
                 return true;
             })
         );
-        
+
         return true;
     } catch(error: any) {
         console.log(error)
@@ -728,55 +728,7 @@ const read_email_auto = async (req: any) => {
 
 };
 
-// Function to generate PDF from HTML using Puppeteer
-const generatePDF_1 = async (htmlContent: string) => {
-    // Launch Puppeteer to generate PDF
-    const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
-    });
-    const page = await browser.newPage();
 
-    // Set HTML content
-    await page.setContent(htmlContent);
-
-    // Generate PDF
-
-    const file_name = `${123}_trade_info_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-    const uploadDir = path.join(__dirname, '../../../../public/upload'); // Create directory path relative to the current script
-    const file_path = path.join(uploadDir, file_name);
-
-    console.log(uploadDir,file_path);
-
-    await page.pdf({ path: file_path, format: 'A4', printBackground: true });
-
-    // Close the browser
-    await browser.close();
-
-
-    const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(1,{file_name,file_path})
-
-    //fs.unlinkSync(file_path);
-    return aws_s3_url;
-};
-
-const generatePDF = async (htmlContent: string, outputPath: string) => {
-    console.log(outputPath)
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
-
-    await page.pdf({
-        path: outputPath,
-        format: "A4",
-        printBackground: true
-    });
-
-    await browser.close();
-    console.log(`PDF saved: ${outputPath}`);
-};
 
 function formatDate(dateString: string) {
     const date = new Date(dateString);
