@@ -228,7 +228,7 @@ const add_client_info_in_pre_trade = async(req:any,fields:any,data:any)=> {
         //console.log("client_info length",clients.length)
 
         const trade_info = data.map((order:any) => {
-            const client = clients.find((client:any) => client.client_code === order.client_code);
+            const client = clients.find((client:any) => client.client_code.toLowerCase() === order.client_code.toLowerCase());
             if (client) {
                 return {
                     ...order,
@@ -251,7 +251,7 @@ const add_client_info_in_pre_trade = async(req:any,fields:any,data:any)=> {
         });
 
         const client_wise_trades = clients.map((client:any) => {
-            const trades = trade_info.filter((trade:any) => trade.client_code === client.client_code);
+            const trades = trade_info.filter((trade:any) => trade.client_code.toLowerCase() === client.client_code.toLowerCase());
             return {
                 ...client,
                 pre_tades_file_id:fields.pre_tades_file_id,
