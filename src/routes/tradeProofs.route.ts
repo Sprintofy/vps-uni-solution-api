@@ -24,6 +24,8 @@ router.get('/resend-email',tradeProofsController.resend_email);
 
 router.get('/resend-email-all',tradeProofsController.resend_email_all);
 
+router.get('/read-client-email',tradeProofsController.read_email_client_wise);
+
 router.get('/auth-url',tradeProofsController.generateAuthUrlC);
 //
 router.get('/oauth/callback',tradeProofsController.exchangeCodeForTokensC);

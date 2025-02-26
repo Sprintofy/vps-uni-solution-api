@@ -750,25 +750,29 @@ const read_email_client_wise = async (req: any) => {
         let date = moment().format('YYYY-MM-DD');// Get today's date
         let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
-        let query= `subject:"${subject}" after:${startTime}`
 
         if(req.query.start_date && (moment(req.query.start_date).format("YYYY-MM-DD") != moment().format("YYYY-MM-DD"))) {
             date = moment(req.query.start_date).format('YYYY-MM-DD'); // Format date
             startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
-            endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
-            query= `subject:"${subject}" after:${startTime} before:${endTime}`
+            endTime = moment(`${moment().format('YYYY-MM-DD')} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+        }
+
+        const results = await tradeProofsModel.fetch_all_trade_proof_email_read_client_wise(1,req.query.client_id,date);
+
+        if(!results.length) {
+            return true;
+        }
+
+        let query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
+
+        if(req.query.start_date && (moment(req.query.start_date).format("YYYY-MM-DD") != moment().format("YYYY-MM-DD"))) {
+            query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
         }
 
         console.log("date",date)
         console.log("startTime",startTime)
         console.log("endTime",endTime)
         console.log("query",query)
-
-        const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
-
-        if(!results.length) {
-            return true;
-        }
 
         const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
 
@@ -790,6 +794,8 @@ const read_email_client_wise = async (req: any) => {
             userId: "me",
             q: query
         });
+
+        console.log("responses.length",responses.data.resultSizeEstimate);
 
         if(!responses.data.resultSizeEstimate) {
             console.log("No Message Found...!")
@@ -852,6 +858,8 @@ const read_email_client_wise = async (req: any) => {
                 body,
             });
         }
+
+        console.log(threads);
 
         const extractEmailParts = (headerValue: string) => {
             const match = headerValue.match(/(.*?)\s*<(.*)>/);
@@ -1173,6 +1181,7 @@ const processingThreadAndClientEmail = async (threads: any) => {
 */
 
 export default {
-    read_email:read_email,
-    read_email_auto:read_email_auto
+    read_email: read_email,
+    read_email_auto: read_email_auto,
+    read_email_client_wise: read_email_client_wise
 }
