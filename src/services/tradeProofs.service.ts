@@ -117,7 +117,7 @@ const download_all_email = async (req: any) => {
         // Download each file
         for (const email of all_emails) {
             console.log(email)
-            const fileName = `${email.client_code}_${email.pre_trade_proof_id}_${moment(email.created_date).format('DDMMYYYY')}.pdf`;
+            const fileName = `${email.client_code}_${moment(email.created_date).format('DDMMYYYY')}_${email.pre_trade_proof_id}.pdf`;
             const localFilePath = path.join(uploadDir, fileName);
             try {
                 // Collect data for Excel
@@ -360,7 +360,7 @@ const download_all_email_by_client = async (req:any) => {
         // Download each file
         for (const email of all_emails) {
 
-            const fileName = `${email.pre_trade_proof_id}_${email.client_code}_${moment(email.created_date).format('DDMMYYYY')}.pdf`;
+            const fileName = `${email.client_code}_${moment(email.created_date).format('DDMMYYYY')}_${email.pre_trade_proof_id}.pdf`;
 
             const localFilePath = path.join(uploadDir, fileName);
 
