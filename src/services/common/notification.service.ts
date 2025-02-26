@@ -87,7 +87,7 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
     const mailOptions = {
         from: organizations_config[0].from_email ,
         to: [client.email],
-        subject: organizations_config[0].email_subject,
+        subject: organizations_config[0].email_subject+" "+client.client_code,
         html: emailBody,
     };
     const email_response = await emailService.sendOrganizationWiseEmail(organization_id,mailOptions);
@@ -522,7 +522,7 @@ const sendPreTradeSingleEmailToClient= async(organization_id:any,trade_info:any)
     const mailOptions = {
         from: organizations_config[0].from_email,
         to: [trade_info.client_email],
-        subject: organizations_config[0].email_subject+"_"+trade_info.client_code,
+        subject: organizations_config[0].email_subject+" "+trade_info.client_code,
         html: trade_info.email_sample,
     };
 
