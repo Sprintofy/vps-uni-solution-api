@@ -505,93 +505,6 @@ const download_all_email = async (req:any) => {
     }
 };
 
-// const download_all_pdf = async (req:any) => {
-//     try {
-//         const file_name = `trade_all_files_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-//         const uploadDir = path.join(__dirname, '/uploads');
-//         const zipFilePath = path.join(uploadDir, file_name);
-
-//         // Create temp directory if it doesn't exist
-//         if (!fs.existsSync(uploadDir)) {
-//             fs.mkdirSync(uploadDir, { recursive: true });
-//         }
-
-//         // const keys = await clientTradeModel.fetch_all_trade_proof_urls()
-
-//         console.log("keys from db");
-
-//         const downloadedFiles: string[] = [];
-
-//         const keys :any[]= []
-//         keys.push(
-//             {
-//             pdf_url:'https://uni-solution-api.sprintofy.com/proofs/organization_1/PRB3134_trade_info_22_01_2025_17-07-15.pdf',
-//             pre_trade_proof_id : 1,
-//             client_code : 'PRB3134',
-//             created_date : '2024-12-12',
-//         })
-
-//         console.log("keys from db 2");
-
-//         // Download each file from S3
-//         // for (const key of keys) {
-
-//         //     const localFilePath = path.join(uploadDir, path.basename(`${key.pre_trade_proof_id}_${key.client_code}_${key.created_date}`));
-//         //     console.log("keys from db 2.1",localFilePath);
-
-//         //     await awsS3BucketService.downloadFileFromS3( key.pdf_url, localFilePath);
-
-//         //     downloadedFiles.push(localFilePath);
-//         // }
-
-
-
-//         for (const key of keys) {
-//             const fileName = `${key.pre_trade_proof_id}_${key.client_code}_${key.created_date}.pdf`;
-//             const localFilePath = path.join(uploadDir, fileName);
-
-//             const response:any = await axios({
-//                 url: key.pdf_url,
-//                 method: 'GET',
-//                 responseType: 'stream',
-//             });
-
-//             const writer = fs.createWriteStream(localFilePath);
-//             response.data.pipe(writer);
-
-//             await new Promise((resolve, reject) => {
-//                 writer.on('finish', resolve);
-//                 writer.on('error', reject);
-//             });
-
-//             downloadedFiles.push(localFilePath);
-//         }
-
-//         console.log("keys from db 3");
-
-//         // Create a zip file
-//         await fileService.createZipFile(downloadedFiles, zipFilePath);
-
-//         console.log("keys from db 4");
-
-//         // Upload the zip file back to S3
-//         // const uploadedZipKey = `zipped/${file_name}`;
-//         // const zipFileUrl = await awsS3BucketService.uploadFile('',uploadedZipKey, zipFilePath);
-
-//         // Cleanup local files
-//         // downloadedFiles.forEach((file) => fs.unlinkSync(file));
-//         // fs.unlinkSync(zipFilePath);
-
-//         return
-//         // zipFileUrl;
-//     } catch (error: any) {
-//         console.error(`Error processing files: ${error.message}`);
-//         throw error;
-//     }
-// };
-
-
-
 const download_all_pdf = async (req: any) => {
     try {
         const file_name = `trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
@@ -657,10 +570,6 @@ const download_all_pdf = async (req: any) => {
         throw error;
     }
 };
-
-
-
-
 
 const download_zip_file = async (req:any) => {
     try {
@@ -828,7 +737,6 @@ const download_all_email_by_client = async (req:any) => {
         throw error;
     }
 };
-
 
 
 /*************** MYSQL CURD Operation *************/

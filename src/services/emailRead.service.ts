@@ -729,7 +729,6 @@ const read_email_auto = async (req: any) => {
 };
 
 
-
 function formatDate(dateString: string) {
     const date = new Date(dateString);
 
