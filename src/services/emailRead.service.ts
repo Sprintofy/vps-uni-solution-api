@@ -209,10 +209,12 @@ const read_email_imap = async (req: any) => {
 
 const read_email = async (req: any) => {
     try {
-        const date = moment().format('YYYY-MM-DD'); // Get today's date
-        const subject = "Pre Trade Confirmation"; // Replace with the required subject
 
-        // todo fetch organizations
+        const date = moment().format('YYYY-MM-DD');// Get today's date
+
+        // Replace with the required subject
+        const subject = "Pre Trade Confirmation";
+
         const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
 
         if(!results.length) {
@@ -257,9 +259,6 @@ const read_email = async (req: any) => {
                 format: "full",
             });
 
-            // console.log("email --------");
-            // console.dir(email, { depth: null });
-
             // Get headers and message-id
             const allHeaders = email.data.payload?.headers || [];
             const messageIdHeader = allHeaders.find((header: any) =>
@@ -296,7 +295,7 @@ const read_email = async (req: any) => {
                     body = match ? match[1] : decodedBody;
             }
 
-                        // console.log("body  --------",body);
+           // console.log("body  --------",body);
 
 
             threads[msg.threadId].push({
@@ -307,45 +306,12 @@ const read_email = async (req: any) => {
             });
             }
 
-
-        console.log("threads---------",threads)
         const extractEmailParts = (headerValue: string) => {
             const match = headerValue.match(/(.*?)\s*<(.*)>/);
             return match ? [match[1].trim(), match[2]] : [headerValue, ''];
         };
 
         const finalThread = {} as any
-
-
-        // await Promise.all(
-        //     Object.entries(threads).map(async ([threadId, emails]) => {
-        //         finalThread[threadId] = {
-        //             thread_id : threadId,
-        //             emails: [] as any
-        //         } as any;
-        //         // Sort emails by date (oldest to newest)
-        //         emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
-        //         if(emails.length) {
-        //             const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
-        //            emails.map((email:any) => {
-        //                 const [senderName, senderEmail] = extractEmailParts(email.headers.From);
-        //                 const [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-        //                if(client_proof_info[senderEmail]) {
-        //                    finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
-        //                    finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
-        //                    finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
-        //                    finalThread[threadId].emails = emails
-        //                }
-        //                // console.log("recipientName",recipientName,recipientEmail)
-        //                 return true
-        //             });
-        //         }
-        //         return true;
-        //     })
-        // );
-
-        // console.log("finalThread",finalThread)
-
 
         await Promise.all(
             Object.entries(threads).map(async ([threadId, emails]) => {
@@ -473,12 +439,7 @@ const read_email = async (req: any) => {
                 return true;
             })
         );
-
-        // // Iterate and update each object in the data structure
-        // Object.values(finalThread).forEach(({ email_url, pre_trade_proof_id }) => {
-        //     console.log(`email_url: ${email_url}, pre_trade_proof_id: ${pre_trade_proof_id}`);
-        // });
-
+        
         return true;
     } catch(error: any) {
         console.log(error)
