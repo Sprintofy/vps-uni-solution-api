@@ -102,9 +102,6 @@ const import_trades = async (req: any) => {
                 // Delete File Path
                 await fileService.deleteFile(file.filepath);
 
-                emailReadService.read_email_auto(req);
-
-
             } catch (error: any) {
                 console.error(`Error processing file ${file.originalFilename}:`, error.message);
                 await fileService.deleteFile(file.filepath);
@@ -186,6 +183,8 @@ const save_bulk_pre_trade_info = async(req:any,fields:any,data:any)=> {
 
         const pre_trades_info = await add_client_info_in_pre_trade(req,fields,data);
 
+        console.log("client add_client_info_in_pre_trade Completed ");
+
         // Save pre-trade info and update trade objects with pre_trade_info_id
         const preTradeInfoPromises = pre_trades_info.trade_info.map(async (trade: any) => {
             trade.pre_tades_file_id = fields.pre_tades_file_id;
@@ -195,12 +194,7 @@ const save_bulk_pre_trade_info = async(req:any,fields:any,data:any)=> {
 
         const preTradeInfo = await Promise.all(preTradeInfoPromises);
 
-        // const not_match_record = status_updated.filter((trade:any) => trade.status == 0);
-
-        // if (not_match_record.length){
-        //      throw new Error('Some Trade not Match with Client Code');
-        // }
-
+        console.log("save_pre_trade_info For all Client Completed..1");
 
         const batchResults = pre_trades_info.client_wise_trades.map(async (client: any) => {
             return save_bulk_trades_by_client(req,client);
@@ -209,7 +203,6 @@ const save_bulk_pre_trade_info = async(req:any,fields:any,data:any)=> {
         const clientPreTrade = await Promise.all(batchResults);
 
         return true;
-
     } catch (error) {
         console.error('Error processing bulk  Trade:', error);
         throw new Error('Error processing bulk client Trade');
@@ -329,11 +322,7 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
 
         const client_info = await check_validation_pre_trade_client(req,client);
 
-
         if(client_info.unique_trade_info.length) {
-
-            // send email to client pre-trade
-            // const email_sample_url = await emailNotificationServiceService.generateSampleEmailPreTradeClientWise(client_info.organization_id,client_info)
 
             const email_sample = await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(client_info.organization_id,client_info)
 
@@ -352,9 +341,6 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
 
             client_info.pre_proof_id = preProofId;
 
-            // Save updated trades with pre_proof_id
-            // is_email_sent: 1,
-            // email_response:JSON.stringify(email_response),
 
             const saveTradePromises = client_info.unique_trade_info.map((trade: any) => {
                 trade.pre_proof_id = preProofId;

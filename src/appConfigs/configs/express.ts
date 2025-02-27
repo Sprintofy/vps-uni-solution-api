@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import cors from 'cors';
 import path from "path";
+import "../../services/scheduler.service"; // Import cron job (starts automatically)
 import morganLogger from '../middleware/morganLogger';
 import authenticate from '../middleware/authenticate';
 import joiErrorHandler from "../middleware/joiErrorHandler";
