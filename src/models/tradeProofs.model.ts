@@ -255,6 +255,19 @@ class TradeProofsModel extends BaseModel {
         return await this._executeQuery(query, [organization_id]);
     }
 
+    async fetch_resend_email_by_date(organization_id:number,date:any) {
+        const query = `SELECT ptp.pre_trade_proof_id,c.client_id,
+                    c.client_code ,ptp.created_date,c.email as client_email,
+                    ptp.email_sample
+                    FROM pre_trade_proofs ptp  
+                    LEFT JOIN clients c ON c.client_id = ptp.client_id
+                    WHERE 
+                    ptp.is_email_sent = 0
+                    AND ptp.organization_id = ?
+                    AND DATE(ptp.created_date) = ? `;
+        return await this._executeQuery(query, [organization_id,date]);
+    }
+
     async fetch_all_trade_proof_urls_by_client_id(client_id:number) {
         const query = `SELECT pre_trade_proof_id, client_code ,created_date ,  
         CONCAT('${CONFIGS.AWS.S3.BASE_URL}',pdf_url)as pdf_url,

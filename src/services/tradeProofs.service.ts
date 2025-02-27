@@ -412,12 +412,9 @@ const download_all_email_by_client = async (req:any) => {
 const resend_email = async (req:any) => {
     try {
         const trade_info = await tradeProofsModel.fetch_trade_proof_Id(req.query.pre_trade_proof_id);
-
         if(trade_info && trade_info.length) {
-
           await notificationService.sendPreTradeSingleEmailToClient(1,trade_info[0])
             return true;
-
         } else {
             console.log(`Email already Sent ${trade_info}`);
             return true;
@@ -430,25 +427,33 @@ const resend_email = async (req:any) => {
 
 const resend_email_all = async (req: any) => {
     try {
-        const tradeInfoArray = await tradeProofsModel.fetch_trade_proof_email(req.query.organization_id || 1);
+        const date = moment().format('YYYY-MM-DD');// Get today's date
+        const organizationId =  req.query.organization_id || 1;
+        const tradeInfoArray = await tradeProofsModel.fetch_resend_email_by_date(organizationId,date);
 
-        const processTradeInfo = async (tradeInfoArray: any[]) => {
-            for (const tradeInfo of tradeInfoArray) {
-                if (tradeInfo) {
-                    await notificationService.sendPreTradeSingleEmailToClient(req.query.organization_id || 1, tradeInfo);
-                    console.log(`Email sent to ${tradeInfo.client_email}`);
-                } else {
-                    console.log(`Email already sent: ${JSON.stringify(tradeInfo)}`);
-                }
+        if (!tradeInfoArray?.length) {
+            console.log("No trade proofs found to send emails.");
+            return true;
+        }
+
+        const emailPromises = tradeInfoArray.map(async (tradeInfo:any) => {
+            if (!tradeInfo) return console.log(`Skipping invalid trade info: ${JSON.stringify(tradeInfo)}`);
+            try {
+                await notificationService.sendPreTradeSingleEmailToClient(organizationId, tradeInfo);
+                console.log(`Email sent to ${tradeInfo.client_email}`);
+            } catch (emailError:any) {
+                console.error(`Failed to send email to ${tradeInfo.client_email}: ${emailError.message}`);
             }
-        };
-        // Call the function to process trade info
-        await processTradeInfo(tradeInfoArray);
+        });
+
+        await Promise.allSettled(emailPromises);
+        return true;
     } catch (error: any) {
         console.error(`Error processing resend all emails: ${error.message}`);
         throw error;
     }
 };
+
 
 /*************** MYSQL CURD Operation *************/
 
