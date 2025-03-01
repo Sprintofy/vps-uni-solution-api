@@ -350,9 +350,9 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
 
             await Promise.all(saveTradePromises);
 
-            // emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
+            emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
 
-            // emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
+            emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
 
         }
         return true;
@@ -408,10 +408,10 @@ const save_trades_by_client = async(req:any)=> {
 
         await Promise.all(saveTradePromises);
 
-        // emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
+         emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
 
         // send email to client pre-trade
-        // emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
+         emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
 
         // req.body.is_email_sent = 1;
         // req.body.email_response = JSON.stringify(email_response);
