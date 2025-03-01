@@ -327,11 +327,11 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
             const email_sample = await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(client_info.organization_id,client_info)
 
             // pdf creation pre-trade
-            const pdf_url = await emailNotificationServiceService.generatePreTradeClientWise(client_info.organization_id,client_info)
+            const pdf_sample = await emailNotificationServiceService.generatePreTradePdfSampleFile(client_info.organization_id,client_info)
 
             // Save pre-trade proofs and get the proof ID
             const emailProof = await save_pre_trade_proofs(req,{
-                pdf_url:pdf_url,
+                pdf_sample:pdf_sample,
                 email_sample:email_sample,
                 client_id:client_info.client_id,
                 client_code:client_info.client_code
@@ -340,6 +340,7 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
             const preProofId = emailProof.insertId;
 
             client_info.pre_proof_id = preProofId;
+            req.body.pre_proof_id = preProofId;
 
 
             const saveTradePromises = client_info.unique_trade_info.map((trade: any) => {
@@ -349,7 +350,9 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
 
             await Promise.all(saveTradePromises);
 
-            emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
+            // emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
+
+            // emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
 
         }
         return true;
@@ -385,8 +388,8 @@ const save_trades_by_client = async(req:any)=> {
         req.body.email_sample = await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(1,req.body)
 
 
-        // pdf creation pre trade
-        req.body.pdf_url = await emailNotificationServiceService.generatePreTradeClientWise(1,req.body)
+        // pdf creation pre trade sample
+        req.body.pdf_sample = await emailNotificationServiceService.generatePreTradePdfSampleFile(1,req.body)
 
         // Save pre-trade proofs and get the proof ID
         const emailProof = await save_pre_trade_proofs(req, req.body);
@@ -394,6 +397,8 @@ const save_trades_by_client = async(req:any)=> {
         const preProofId = emailProof.insertId;
 
         client_info.pre_proof_id = preProofId;
+
+        req.body.pre_proof_id = preProofId;
 
         // Save updated trades with pre_proof_id
         const saveTradePromises = updatedTrades.map((trade: any) => {
@@ -403,13 +408,13 @@ const save_trades_by_client = async(req:any)=> {
 
         await Promise.all(saveTradePromises);
 
+        // emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
+
         // send email to client pre-trade
-        emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
+        // emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
 
         // req.body.is_email_sent = 1;
         // req.body.email_response = JSON.stringify(email_response);
-
-        emailReadService.read_email_auto(req);
 
         return true;
     } catch (error) {
@@ -867,6 +872,7 @@ const save_pre_trade_proofs = async(req:any,body:any)=> {
     if (body.email_url !== undefined && body.email_url !== null && body.email_url !== '') data.email_url = body.email_url;
     if (body.email_sample_url !== undefined && body.email_sample_url !== null && body.email_sample_url !== '') data.email_sample_url = body.email_sample_url;
     if (body.email_sample !== undefined && body.email_sample !== null && body.email_sample !== '') data.email_sample = body.email_sample;
+    if (body.pdf_sample !== undefined && body.pdf_sample !== null && body.pdf_sample !== '') data.pdf_sample = body.pdf_sample;
     if (body.email_proof !== undefined && body.email_proof !== null && body.email_proof !== '') data.email_proof = body.email_proof;
     if (body.pdf_url !== undefined && body.pdf_url !== null && body.pdf_url !== '') data.pdf_url = body.pdf_url;
 

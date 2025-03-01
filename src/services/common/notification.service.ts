@@ -281,13 +281,13 @@ const generateSampleEmailBodyPreTradeClientWise = async(organization_id:any,clie
 
 }
 
-const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
+const generatePreTradePdfFileClientWise = async(organization_id:any,data:any)=> {
 
     // todo fetch Email/template config From Organization wise
 
     const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
+    <html lang="en">
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Instruction Register</title>
@@ -330,7 +330,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
         }
     </style>
 </head>
-<body>
+    <body>
     <div class="container">
         <h1>Order Instruction Register</h1>
         <p><strong>To,</strong><br> MOFSL</p>
@@ -393,8 +393,7 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
         </table>
     </div>
 </body>
-</html>
-`;
+    </html>`;
 
     // Launch Puppeteer to generate PDF
     // const browser = await puppeteer.launch({
@@ -426,8 +425,127 @@ const generatePreTradeClientWise = async(organization_id:any,data:any)=> {
 
     const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id,{file_name,file_path})
 
+    if(aws_s3_url) {
+        await tradeProofModel.update_pre_trade_proofs({pdf_url:aws_s3_url},data.pre_proof_id)
+    } else {
+        console.error(" Generate Pdf ULR Failed --->",data.client_code);
+    }
     fs.unlinkSync(file_path);
-    return aws_s3_url;
+    return true;
+}
+
+const generatePreTradePdfSampleFile = async(organization_id:any,data:any)=> {
+
+    const htmlContent = `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Instruction Register</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            text-align: center;
+            color: #444;
+            text-decoration: underline;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+        </head>
+        <body>
+    <div class="container">
+        <h1>Order Instruction Register</h1>
+        <p><strong>To,</strong><br> MOFSL</p>
+        <p>
+            You are requested to execute the following trades in my trading account bearing client code number 
+            <strong>${data.client_code}</strong> with Motilal Oswal Financial Services Ltd., as per the details mentioned below.
+            Kindly confirm the execution to me through your regular format.
+        </p>
+        
+        <!-- First Table: Trade Information -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Sr. No.</th>
+                    <th>Scrip Name Mention Expiry Date (for Derivative Contracts)</th>
+                    <th>Buy/Sell</th>
+                    <th>Quantity</th>
+                    <th>Rate</th>
+                    <th>Trigger Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.unique_trade_info.map((trade: any, index: any) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${trade.script_name || ''}</td>
+                   <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
+                    <td>${trade.quantity || ''}</td>
+                    <td>${trade.price}</td>
+                     <td>${trade.trigger_price}</td>
+                </tr>`
+    ).join('')}
+        </tbody>
+        </table>
+
+        <!-- Second Table: Client Information -->
+        <table>
+            <tbody>
+                <tr>
+                    <td><strong>Client Code:</strong></td>
+                    <td>${data.client_code}</td>
+                </tr>
+                <tr>
+                    <td><strong>Client Name:</strong></td>
+                    <td>${data.client_name}</td>
+                </tr>
+                <tr>
+                    <td><strong>Client Signature:</strong></td>
+                    <td>__________________________________</td>
+                </tr>
+                <tr>
+                    <td><strong>Order Date((DD/MM/YYYY)):</strong></td>
+                    <td>${moment().format('DD/MM/YYYY')}</td>
+                </tr>
+                <tr>
+                    <td><strong>Order Time (HH:MM):</strong></td>
+                    <td>09:15 AM</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+        </html>`;
+    return htmlContent;
 }
 
 const readPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
@@ -539,7 +657,8 @@ const sendPreTradeSingleEmailToClient= async(organization_id:any,trade_info:any)
 export default {
     sendPreTradeEmailToClientOrganizationWise: sendPreTradeEmailToClientOrganizationWise,
     readPreTradeEmailToClientOrganizationWise: readPreTradeEmailToClientOrganizationWise,
-    generatePreTradeClientWise: generatePreTradeClientWise,
+    generatePreTradePdfFileClientWise: generatePreTradePdfFileClientWise,
+    generatePreTradePdfSampleFile: generatePreTradePdfSampleFile,
     generatePreTradeEmailPdfClientWise:generatePreTradeEmailPdfClientWise,
     generateSampleEmailPreTradeClientWise:generateSampleEmailPreTradeClientWise,
     generateSampleEmailBodyPreTradeClientWise:generateSampleEmailBodyPreTradeClientWise,
