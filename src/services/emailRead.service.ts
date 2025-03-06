@@ -748,13 +748,13 @@ const read_email_client_wise = async (req: any) => {
         const subject = "Pre Trade Confirmation";
 
         let date = moment().format('YYYY-MM-DD');// Get today's date
-        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
-        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
+        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
 
         if(req.query.start_date && (moment(req.query.start_date).format("YYYY-MM-DD") != moment().format("YYYY-MM-DD"))) {
             date = moment(req.query.start_date).format('YYYY-MM-DD'); // Format date
-            startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
-            endTime = moment(`${moment().format('YYYY-MM-DD')} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+            startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
+            endTime = moment(`${moment().format('YYYY-MM-DD')} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
         }
 
         const results = await tradeProofsModel.fetch_all_trade_proof_email_read_client_wise(1,req.query.client_id,date);
@@ -1016,8 +1016,8 @@ const read_email_proof_wise = async (req: any) => {
         const subject = "Pre Trade Confirmation";
 
         let date = moment(results[0].created_date).format('YYYY-MM-DD');// Get today's date
-        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
-        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
+        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
 
         let query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
 
@@ -1262,8 +1262,8 @@ const read_email_client_scheduler= async (body: any) => {
         const subject = "Pre Trade Confirmation";
 
         let date = moment().format('YYYY-MM-DD');// Get today's date
-        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
-        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 7:00 AM IST
+        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
         let query= `{from:${body.results[0].client_email} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
 
         console.log("date",date)
