@@ -1241,7 +1241,7 @@ const read_email_proof_wise = async (req: any) => {
                     const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code || results[0].client_code });
                     finalThread[threadId].email_url = email_url
                     console.log(email_url)
-                    await tradeProofsModel.update_pre_trade_proofs({email_url:email_url},finalThread[threadId].pre_trade_proof_id);
+                    await tradeProofsModel.update_pre_trade_proofs({email_url:email_url},finalThread[threadId].pre_trade_proof_id || results[0].pre_trade_proof_id);
                 }
                 return true;
             })
