@@ -1015,7 +1015,7 @@ const read_email_proof_wise = async (req: any) => {
         const subject = "Pre Trade Confirmation";
 
         let date = moment(results[0].created_date).format('YYYY-MM-DD');// Get today's date
-        let startTime = moment(`${date}`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
+        let startTime = moment(`${results[0].created_date}`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
 
         let query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
