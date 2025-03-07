@@ -122,7 +122,7 @@ const download_all_email = async (req: any) => {
             try {
                 // Collect data for Excel
                 create_excel_data.push({
-                    'Trade Date': moment(email.created_date).format('YYYY-MM-DD'),
+                    'Trade Date': moment(email.created_date).format('DD/MM/YYYY'),
                     'Client Code': email.client_code,
                     'File Name': fileName, // Use correct file name
                 });
