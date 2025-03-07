@@ -1182,13 +1182,13 @@ const read_email_proof_wise = async (req: any) => {
                         //console.log("inner email",email)
                         let [senderName, senderEmail] = extractEmailParts(email.headers.From);
                         let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        //console.log("senderEmail email",senderEmail)
-                        //console.log("recipientEmail email",recipientEmail)
+                        console.log("senderEmail email",senderEmail)
+                        console.log("recipientEmail email",recipientEmail)
 
                         // replace Email with can
                         if (senderEmail.toLowerCase().includes("canned")) {
                             senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            // console.log("senderEmail",senderEmail)
+                            /console.log("senderEmail",senderEmail)
 
                         }
 
