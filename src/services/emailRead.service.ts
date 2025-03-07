@@ -1188,7 +1188,7 @@ const read_email_proof_wise = async (req: any) => {
                         // replace Email with can
                         if (senderEmail.toLowerCase().includes("canned")) {
                             senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            /console.log("senderEmail",senderEmail)
+                            console.log("senderEmail",senderEmail)
 
                         }
 
