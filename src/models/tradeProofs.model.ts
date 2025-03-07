@@ -245,7 +245,7 @@ class TradeProofsModel extends BaseModel {
 
     async fetch_trade_unread_proof_Id(pre_trade_proof_id:number) {
         const query = `SELECT ptp.pre_trade_proof_id,c.client_id,
-                    c.client_code ,ptp.created_date,c.email as client_email,
+                    c.client_code ,DATE_FORMAT(ptp.created_date, '%Y-%m-%d %H:%i:%s') AS formatted_date,ptp.created_date,c.email as client_email,
                     ptp.email_sample
                     FROM pre_trade_proofs ptp  
                     LEFT JOIN clients c ON c.client_id = ptp.client_id
