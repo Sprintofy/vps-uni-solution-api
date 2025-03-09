@@ -94,29 +94,19 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
 
 const download_all_email = async (req: any) => {
     try {
-        console.log("download_all_email")
-        const zip_file_name = `pre_trade_all_files_${moment().format('YYYY_MM_DD_HH-mm-ss')}.zip`;
         const uploadDir = path.join(__dirname, '../../../public/upload');
-        const zip_file_path = path.join(uploadDir, zip_file_name);
-
-        const excel_file_name = `pre_trade_CDR_${moment().format('YYYY_MM_DD_HH-mm-ss')}.xlsx`;
-        const excel_file_path = path.join(uploadDir, excel_file_name);
-
-        console.log("excel_file_name",excel_file_name)
-
-        // Ensure the upload directory exists
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
         // Fetch all trade proof URLs
         const all_emails = await tradeProofsModel.fetch_all_trade_proof_urls_email(1,req.query.start_date,req.query.end_date);
 
-        console.log(all_emails)
         const downloadedFiles: string[] = [];
         const create_excel_data: any[] = []; // Ensure it's initialized as an array
-
+        let file_date="" as any;
         // Download each file
         for (const email of all_emails) {
-            console.log(email)
+
+            if(file_date!== null && file_date !==""){
+                file_date =  moment(email.created_date).format('DD_MM_YYYY')
+            }
             const fileName = `${email.client_code}_${moment(email.created_date).format('DDMMYYYY')}_${email.pre_trade_proof_id}.pdf`;
             const localFilePath = path.join(uploadDir, fileName);
             try {
@@ -148,6 +138,18 @@ const download_all_email = async (req: any) => {
                 console.error(`Failed to download file from ${email.email_url}: ${downloadError.message}`);
             }
         }
+
+        const zip_file_name = `pre_trade_all_files_${moment(file_date).format('YYYY_MM_DD_HH-mm-ss')}.zip`;
+        const zip_file_path = path.join(uploadDir, zip_file_name);
+
+        const excel_file_name = `pre_trade_CDR_${moment(file_date).format('YYYY_MM_DD_HH-mm-ss')}.xlsx`;
+        const excel_file_path = path.join(uploadDir, excel_file_name);
+
+        // Ensure the upload directory exists
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+
+        console.log("excel_file_name",excel_file_name)
 
         // Create Excel sheet
         const workbook = XLSX.utils.book_new();
