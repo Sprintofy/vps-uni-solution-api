@@ -261,8 +261,7 @@ class TradeProofsModel extends BaseModel {
                     FROM pre_trade_proofs ptp  
                     LEFT JOIN clients c ON c.client_id = ptp.client_id
                     WHERE 
-                    ptp.is_email_received = 0
-                    AND ptp.pre_trade_proof_id = ? `;
+                    ptp.pre_trade_proof_id = ? `;
         return await this._executeQuery(query, [pre_trade_proof_id]);
     }
 
