@@ -744,10 +744,16 @@ const read_email_auto = async (req: any) => {
 const read_email_client_wise = async (req: any) => {
     try {
 
-        // Replace with the required subject
-        const subject = "Pre Trade Confirmation";
-
         let date = moment().format('YYYY-MM-DD');// Get today's date
+        const results = await tradeProofsModel.fetch_all_trade_proof_email_read_client_wise(1,req.query.client_id,date);
+
+        if(!results.length) {
+            return true;
+        }
+        // Replace with the required subject
+        const subject = "Pre Trade Confirmation "+results[0].client_code;
+
+
         let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
 
@@ -757,11 +763,7 @@ const read_email_client_wise = async (req: any) => {
             endTime = moment(`${moment().format('YYYY-MM-DD')} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
         }
 
-        const results = await tradeProofsModel.fetch_all_trade_proof_email_read_client_wise(1,req.query.client_id,date);
 
-        if(!results.length) {
-            return true;
-        }
 
         let query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
 
@@ -1012,7 +1014,7 @@ const read_email_proof_wise = async (req: any) => {
             return true;
         }
         // Replace with the required subject
-        const subject = "Pre Trade Confirmation";
+        const subject = "Pre Trade Confirmation "+results[0].client_code;
         console.log("results[0].created_date",results[0].created_date)
         let date = moment(results[0].created_date).format('YYYY-MM-DD');// Get today's date
         const timeIST = moment(results[0].formatted_date, "YYYY-MM-DD HH:mm:ss").subtract(2, 'minutes').format("HH:mm");
@@ -1260,12 +1262,13 @@ const read_email_client_scheduler= async (body: any) => {
     try {
 
         // Replace with the required subject
-        const subject = "Pre Trade Confirmation";
-
+        // const subject = "Pre Trade Confirmation";
+        const subject = "Pre Trade Confirmation "+body.results[0].client_code;
         let date = moment().format('YYYY-MM-DD');// Get today's date
         let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 7:00 AM IST
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
         let query= `{from:${body.results[0].client_email} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
+
 
         console.log("date",date)
         console.log("startTime",startTime)

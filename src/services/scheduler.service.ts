@@ -8,7 +8,7 @@ cron.schedule("*/2 * * * *", async () => {
     try {
         let date = moment().format('YYYY-MM-DD');// Get today's date
         console.log("⏳ Running scheduled email job date :", date);
-        const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
+        const results = await tradeProofsModel.fetch_all_trade_proof_email_not_received(1,date);
         if(!results.length) {
             console.log("✅ All Emails Read successfully");
             return true;

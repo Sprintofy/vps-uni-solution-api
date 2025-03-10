@@ -174,15 +174,15 @@ const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:a
   </html>`;
 
     // Launch Puppeteer to generate PDF
-    // const browser = await puppeteer.launch({
-    //     executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
-    //     headless: true,
-    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
-    // });
     const browser = await puppeteer.launch({
+        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
     });
+    // const browser = await puppeteer.launch({
+    //     headless: true,
+    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+    // });
     const page = await browser.newPage();
 
     // Set HTML content
@@ -396,15 +396,15 @@ const generatePreTradePdfFileClientWise = async(organization_id:any,data:any)=> 
     </html>`;
 
     // Launch Puppeteer to generate PDF
-    // const browser = await puppeteer.launch({
-    //     executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
-    //     headless: true,
-    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
-    // });
     const browser = await puppeteer.launch({
+        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
     });
+    // const browser = await puppeteer.launch({
+    //     headless: true,
+    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+    // });
    const page = await browser.newPage();
 
     // Set HTML content
