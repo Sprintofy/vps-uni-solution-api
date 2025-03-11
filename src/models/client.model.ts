@@ -249,9 +249,9 @@ class ClientModel extends BaseModel {
             fieldsToUpdate.push('status = ?');
             values.push(data.status);
         }
-        if (data.is_auto_reply !== null && data.is_auto_reply!=="") {
+        if (data.is_auto_reply !== null && data.is_auto_reply!== "" ) {
             fieldsToUpdate.push('is_auto_reply = ?');
-            values.push(data.status);
+            values.push(data.is_auto_reply);
         }
 
         // Only add updated_by and updated_date if there are other fields to update
