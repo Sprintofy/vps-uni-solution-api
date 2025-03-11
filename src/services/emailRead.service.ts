@@ -1263,11 +1263,11 @@ const read_email_client_scheduler= async (body: any) => {
 
         // Replace with the required subject
         // const subject = "Pre Trade Confirmation";
-        const subject = "Pre Trade Confirmation "+body.results[0].client_code;
+        const subject = body.results[0].client_code;
         let date = moment().format('YYYY-MM-DD');// Get today's date
         let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 7:00 AM IST
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
-        let query= `{from:${body.results[0].client_email} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
+        let query= `{from:${ body.results[0].client_email.replace(/\.(?=[^@]*@)/g, "")} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
 
 
         console.log("date",date)
@@ -1386,7 +1386,6 @@ const read_email_client_scheduler= async (body: any) => {
                         emailPart2 = emailPart
                     }
 
-
                     let htmlContent = `<!DOCTYPE html>
         <html lang="en">
         <head>
@@ -1428,11 +1427,11 @@ const read_email_client_scheduler= async (body: any) => {
                     </table>`;
 
                     htmlContent += emails.map((email:any) => {
-                        //console.log("inner email",email)
+                        console.log("inner email",email)
                         let [senderName, senderEmail] = extractEmailParts(email.headers.From);
                         let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        //console.log("senderEmail email",senderEmail)
-                        //console.log("recipientEmail email",recipientEmail)
+                        console.log("senderEmail email",senderEmail)
+                        console.log("recipientEmail email",recipientEmail)
 
                         // replace Email with can
                         if (senderEmail.toLowerCase().includes("canned")) {
@@ -1485,10 +1484,10 @@ const read_email_client_scheduler= async (body: any) => {
 
                     htmlContent += `</div></div></body></html>`;
 
-                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code });
+                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code || body.results[0].client_code });
                     finalThread[threadId].email_url = email_url
-                    console.log("Email Read Successfully---Proof_id:",finalThread[threadId].pre_trade_proof_id," Client Code:",finalThread[threadId].client_code ," URL:",email_url)
-                    await tradeProofsModel.update_pre_trade_proofs({is_email_received:1,email_url:email_url},finalThread[threadId].pre_trade_proof_id);
+                    console.log("Email Read Successfully---Proof_id:",finalThread[threadId].pre_trade_proof_id || body.results[0].pre_trade_proof_id," Client Code:",finalThread[threadId].client_code || body.results[0].client_code ," URL:",email_url)
+                    await tradeProofsModel.update_pre_trade_proofs({is_email_received:1,email_url:email_url},finalThread[threadId].pre_trade_proof_id || body.results[0].pre_trade_proof_id);
                 }
                 return true;
             })
