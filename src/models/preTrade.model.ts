@@ -19,7 +19,9 @@ class ClientTradeModel extends BaseModel {
             LEFT JOIN pre_trades_files ptf ON ptf.pre_tades_file_id = pti.pre_tades_file_id
             WHERE pt.organization_id = ? `
 
-        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+        filter_data && filter_data.is_email_received == 1 ? query+=" AND ptp.is_email_received = 1 ":"";
+        filter_data && filter_data.is_email_received == -1 ? query+=" AND ptp.is_email_received = 0 ":"";
+
 
         if (filter_data && filter_data.start_date && filter_data.end_date) {
             query += ` AND DATE(ptp.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
@@ -47,7 +49,8 @@ class ClientTradeModel extends BaseModel {
             LEFT JOIN pre_trades_files ptf ON ptf.pre_tades_file_id = pti.pre_tades_file_id
             WHERE pt.organization_id = ? `
 
-        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+        filter_data && filter_data.is_email_received == 1 ? query+=" AND ptp.is_email_received = 1 ":"";
+        filter_data && filter_data.is_email_received == -1 ? query+=" AND ptp.is_email_received = 0 ":"";
 
         if (filter_data && filter_data.start_date && filter_data.end_date) {
             query += ` AND DATE(ptp.created_date) BETWEEN '${filter_data.start_date}' AND '${filter_data.end_date}' `;
@@ -88,7 +91,8 @@ class ClientTradeModel extends BaseModel {
                         ) ptd ON ptd.client_id = pft.client_id
                         WHERE pft.organization_id = ? `;
 
-        filter_data && filter_data.is_email_received ? query+=" AND ptp.is_email_received = 1 ":"";
+        filter_data && filter_data.is_email_received == 1 ? query+=" AND pft.is_email_received = 1 ":"";
+        filter_data && filter_data.is_email_received == -1 ? query+=" AND pft.is_email_received = 0 ":"";
 
         // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 

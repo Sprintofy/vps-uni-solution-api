@@ -283,11 +283,112 @@ const saveFileLog = async(req:any,file:any,fields:any)=> {
     } as any;
     return await clientModel.saveClientFileLog(file_log);
 }
+// --------------- update client details  -------------------------
+
+const fetch_client_details_by_id = async(req:any)=> {
+    try {
+        const results = await  clientModel.fetch_client_details_by_id(req.query.client_id);
+        return results
+    } catch (error:any) {
+        console.error(`Failed to fetch client details ${error.message}`);
+        throw error;
+    }
+
+}
+
+const updateClient = async (req: any, body: any) => {
+    try {
+        let client_info = {
+            updated_by: req.user.updated_by || 0,
+            updated_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        } as any;
+
+        // Update fields only if they have valid values
+        if (body.client_code !== undefined && body.client_code !== null && body.client_code !== "") client_info.client_code = body.client_code;
+        if (body.client_name !== undefined && body.client_name !== null && body.client_name !== "") client_info.client_name = body.client_name;
+        if (body.mobile !== undefined && body.mobile !== null && body.mobile !== "") client_info.mobile = body.mobile;
+        if (body.email !== undefined && body.email !== null && body.email !== "") client_info.email = body.email;
+        if (body.branch_code !== undefined && body.branch_code !== null && body.branch_code !== "") client_info.branch_code = body.branch_code;
+        if (body.sub_broker_code !== undefined && body.sub_broker_code !== null && body.sub_broker_code !== "") client_info.sub_broker_code = body.sub_broker_code;
+        if (body.dealer_code !== undefined && body.dealer_code !== null && body.dealer_code !== "") client_info.dealer_code = body.dealer_code;
+        if (body.status !== undefined && body.status !== null && body.status !== "") client_info.status = body.status;
+
+        // Call model function to update client info in the database
+        return await clientModel.updateClient(body.client_id,client_info);
+    } catch (error: any) {
+        console.error("Error updating client info:", error.message);
+        throw new Error(`Error: ${error.message}`);
+    }
+};
+
+const  updateClientProfile = async (req: any, body: any) => {
+    try {
+        let client_profile = {
+            updated_by: req.user.updated_by || 0,
+            updated_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        } as any;
+
+        // Update fields only if they have valid values
+        if (body.pan_number !== undefined && body.pan_number !== null && body.pan_number !== "") client_profile.pan_number = body.pan_number;
+        if (body.bank_name !== undefined && body.bank_name !== null && body.bank_name !== "") client_profile.bank_name = body.bank_name;
+        if (body.bank_account_number !== undefined && body.bank_account_number !== null && body.bank_account_number !== "") client_profile.bank_account_number = body.bank_account_number;
+        if (body.bank_ifsc_code !== undefined && body.bank_ifsc_code !== null && body.bank_ifsc_code !== "") client_profile.bank_ifsc_code = body.bank_ifsc_code;
+        if (body.default_dp !== undefined && body.default_dp !== null && body.default_dp !== "") client_profile.default_dp = body.default_dp;
+        if (body.date_of_birth !== undefined && body.date_of_birth !== null && body.date_of_birth !== "") client_profile.date_of_birth = body.date_of_birth;
+
+        // Call model function to update client profile in the database
+        return await clientModel.updateClientProfile(body.client_id,client_profile);
+    } catch (error: any) {
+        console.error("Error updating client profile:", error.message);
+        throw new Error(`Error: ${error.message}`);
+    }
+};
+
+const updateClientAddress = async (req: any, body: any) => {
+    try {
+        let client_address = {
+            updated_by: req.user.updated_by || 0,
+            updated_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        } as any;
+
+        // Update fields only if they have valid values
+        if (body.address_1 !== undefined && body.address_1 !== null && body.address_1 !== "") client_address.address_1 = body.address_1;
+        if (body.address_2 !== undefined && body.address_2 !== null && body.address_2 !== "") client_address.address_2 = body.address_2;
+        if (body.city_name !== undefined && body.city_name !== null && body.city_name !== "") client_address.city = body.city_name;
+        if (body.city_id !== undefined && body.city_id !== null && body.city_id !== "") client_address.city_id = body.city_id;
+        if (body.pin_code !== undefined && body.pin_code !== null && body.pin_code !== "") client_address.pin_code = body.pin_code;
+
+        // Call model function to update client address in the database
+        return await clientModel.updateClientAddress(body.client_id,client_address);
+    } catch (error: any) {
+        console.error("Error updating client address:", error.message);
+        throw new Error(`Error: ${error.message}`);
+    }
+};
+
+const updateClientDetails  = async(req:any)=> {
+    try {
+        const [updateClientInfo,addressResult, profileResult] = await Promise.all([
+            updateClient(req,req.body),
+            updateClientAddress(req, req.body),
+            updateClientProfile(req, req.body)
+        ]);
+        if (!updateClientInfo || !addressResult || !profileResult) {
+            throw new Error('Error: One or more updates failed.');
+        }
+        return req.body;
+    } catch (error) {
+        console.error('Error updation client information :', error);
+        throw new Error('Error updation client information');
+    }
+}
 
 export default {
     fetch_all_clients_with_pagination: fetch_all_clients_with_pagination,
     fetch_all_clients:fetch_all_clients,
     import_clients: import_clients,
-    save_client_info:save_client_info
+    save_client_info:save_client_info,
+    fetch_client_details_by_id : fetch_client_details_by_id,
+    updateClientDetails:updateClientDetails
 
 }

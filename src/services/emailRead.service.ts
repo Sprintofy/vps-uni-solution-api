@@ -1427,11 +1427,11 @@ const read_email_client_scheduler= async (body: any) => {
                     </table>`;
 
                     htmlContent += emails.map((email:any) => {
-                        console.log("inner email",email)
+                        //console.log("inner email",email)
                         let [senderName, senderEmail] = extractEmailParts(email.headers.From);
                         let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        console.log("senderEmail email",senderEmail)
-                        console.log("recipientEmail email",recipientEmail)
+                        //console.log("senderEmail email",senderEmail)
+                        //console.log("recipientEmail email",recipientEmail)
 
                         // replace Email with can
                         if (senderEmail.toLowerCase().includes("canned")) {

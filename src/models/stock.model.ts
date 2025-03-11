@@ -38,6 +38,17 @@ class StockModel extends BaseModel {
         return await this._executeQuery(query, [ids,organization_id]);
     }
 
+    async softDeleteStock(id: number) {
+        let query = `UPDATE stock_master SET status = 0 WHERE stock_id = ?`;
+        return await this._executeQuery(query, [id]);
+    }
+
+    async saveStock(data: any) {
+        console.log("inside model ",data)
+        const query = `INSERT INTO stock_master SET ? ;`;
+        return await this._executeQuery(query, [data]);
+    }
+
 
 }
 

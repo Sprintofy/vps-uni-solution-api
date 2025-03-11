@@ -84,11 +84,38 @@ const fetch_all_cities: IController = async (req: any, res: any) => {
         }
     }
 }
+const fetch_client_details_by_id: IController = async (req: any, res: any) => {
+    try {
+
+        let results = await clientService.fetch_client_details_by_id(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
+const updateClientDetails: IController = async (req: any, res: any) => {
+    try {
+        let results = await clientService.updateClientDetails(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
 
 export default {
     import_clients: import_clients,
     fetch_all_clients: fetch_all_clients,
     fetch_all_clients_with_pagination:fetch_all_clients_with_pagination,
     save_client_info:save_client_info,
-    fetch_all_cities:fetch_all_cities
+    fetch_all_cities:fetch_all_cities,
+    fetch_client_details_by_id:fetch_client_details_by_id,
+    updateClientDetails: updateClientDetails
 }

@@ -33,8 +33,20 @@ const fetch_active_stock: IController = async (req: any, res: any) => {
 }
 const delete_stock: IController = async (req: any, res: any) => {
     try {
-         // let results = await stockService.fetch_active_stock(req);
-        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, {})
+        let results = await stockService.softDeleteStock(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.DELETE, results)
+    } catch (error: any) {
+        if (error instanceof Error) {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
+        } else {
+            apiResponse.error(res, httpStatusCodes.BAD_REQUEST, MESSAGES.COMMON.SOMETHING_WRONG, null)
+        }
+    }
+}
+const import_stocks: IController = async (req: any, res: any) => {
+    try {
+        let result = await stockService.import_stocks(req);
+        apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.SAVE, result)
     } catch (error: any) {
         if (error instanceof Error) {
             apiResponse.error(res, httpStatusCodes.BAD_REQUEST, error.message, null);
@@ -47,5 +59,6 @@ const delete_stock: IController = async (req: any, res: any) => {
 export default {
     fetch_all_stock_with_pagination: fetch_all_stock_with_pagination,
     fetch_active_stock: fetch_active_stock,
-    delete_stock:delete_stock
+    delete_stock:delete_stock,
+    import_stocks:import_stocks
 }

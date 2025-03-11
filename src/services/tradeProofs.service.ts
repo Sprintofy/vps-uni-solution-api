@@ -100,13 +100,15 @@ const download_all_email = async (req: any) => {
 
         const downloadedFiles: string[] = [];
         const create_excel_data: any[] = []; // Ensure it's initialized as an array
-        let file_date="" as any;
+        let file_date = "" as any;
         // Download each file
         for (const email of all_emails) {
 
-            if(file_date!== null && file_date !==""){
-                file_date =  moment(email.created_date).format('DD_MM_YYYY')
+            if(!file_date) {
+                console.log(moment(email.created_date).format('YYYY_MM_DD'))
+                file_date =  moment(email.created_date).format('YYYY_MM_DD')
             }
+
             const fileName = `${email.client_code}_${moment(email.created_date).format('DDMMYYYY')}_${email.pre_trade_proof_id}.pdf`;
             const localFilePath = path.join(uploadDir, fileName);
             try {
@@ -139,17 +141,15 @@ const download_all_email = async (req: any) => {
             }
         }
 
-        const zip_file_name = `pre_trade_all_files_${moment(file_date).format('YYYY_MM_DD_HH-mm-ss')}.zip`;
+        const zip_file_name = `pre_trade_all_files_${file_date}.zip`;
         const zip_file_path = path.join(uploadDir, zip_file_name);
 
-        const excel_file_name = `pre_trade_CDR_${moment(file_date).format('YYYY_MM_DD_HH-mm-ss')}.xlsx`;
+        const excel_file_name = `CDR.xlsx`;
         const excel_file_path = path.join(uploadDir, excel_file_name);
 
         // Ensure the upload directory exists
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-
-        console.log("excel_file_name",excel_file_name)
 
         // Create Excel sheet
         const workbook = XLSX.utils.book_new();
@@ -159,7 +159,7 @@ const download_all_email = async (req: any) => {
 
         // Add Excel file to zip
         downloadedFiles.push(excel_file_path);
-       console.log("downloadedFiles",downloadedFiles)
+
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
 
@@ -249,7 +249,7 @@ const download_all_pdf = async (req: any) => {
 
         // Add Excel file to zip
         downloadedFiles.push(excel_file_path);
-        console.log("downloadedFiles",downloadedFiles)
+
         // Create a ZIP file
         await fileService.createZipFile(downloadedFiles, zip_file_path);
 
