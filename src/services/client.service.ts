@@ -312,6 +312,7 @@ const updateClient = async (req: any, body: any) => {
         if (body.sub_broker_code !== undefined && body.sub_broker_code !== null && body.sub_broker_code !== "") client_info.sub_broker_code = body.sub_broker_code;
         if (body.dealer_code !== undefined && body.dealer_code !== null && body.dealer_code !== "") client_info.dealer_code = body.dealer_code;
         if (body.status !== undefined && body.status !== null && body.status !== "") client_info.status = body.status;
+        if (body.is_auto_reply !== undefined && body.is_auto_reply !== null && body.is_auto_reply !== "") client_info.is_auto_reply = body.is_auto_reply;
 
         // Call model function to update client info in the database
         return await clientModel.updateClient(body.client_id,client_info);
