@@ -15,7 +15,7 @@ class ClientModel extends BaseModel {
     async fetch_all_clients_with_pagination(organization_id:number,searchText:any,limit:any,offset:any,sort:any) {
         let parameters=[];
         parameters.push(organization_id)
-        let query =`SELECT client_id,client_code,client_name,email,mobile,status 
+        let query =`SELECT client_id,client_code,client_name,email,mobile,status,is_auto_reply
          FROM clients
          WHERE organization_id = ? `
         // Serach by client_code
