@@ -178,6 +178,7 @@ const download_all_email = async (req: any) => {
 
         // Cleanup local zip file
         if (fs.existsSync(zip_file_path)) fs.unlinkSync(zip_file_path);
+        if (fs.existsSync(excel_file_path)) fs.unlinkSync(excel_file_path);
 
         return results;
     } catch (error: any) {
@@ -265,6 +266,7 @@ const download_all_pdf = async (req: any) => {
 
         // Cleanup local zip file
         if (fs.existsSync(zip_file_path)) fs.unlinkSync(zip_file_path);
+        if (fs.existsSync(excel_file_path)) fs.unlinkSync(excel_file_path);
 
         return results;
     } catch (error: any) {
@@ -334,6 +336,7 @@ const download_all_pdf_by_client = async (req:any) => {
 
         // Cleanup local zip file
         if (fs.existsSync(zip_file_path)) fs.unlinkSync(zip_file_path);
+
 
         return results;
     } catch (error: any) {
