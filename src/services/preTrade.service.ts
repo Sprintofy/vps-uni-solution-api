@@ -433,7 +433,7 @@ const fetch_trades_details_by_client_id = async(req:any)=> {
         response.client_id = client_info[0].client_id;
         response.customer = client_info[0];
 
-        const trades = await clientTradeModel.fetch_trade_proof_details(req.query.client_id)
+        const trades = await clientTradeModel.fetch_trade_proof_details(req.query.proof_id)
         response.trade_info = trades;
 
 

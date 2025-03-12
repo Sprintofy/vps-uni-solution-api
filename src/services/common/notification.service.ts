@@ -397,9 +397,15 @@ const generatePreTradePdfFileClientWise = async(organization_id:any,data:any)=> 
 
     // Launch Puppeteer to generate PDF
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
+       // executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage', // Prevents memory issues
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu' // Disable GPU acceleration
+        ],
     });
     // const browser = await puppeteer.launch({
     //     headless: true,
@@ -600,8 +606,15 @@ const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any)
 
         // Launch Puppeteer
         const browser = await puppeteer.launch({
+            //executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage', // Prevents memory issues
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu' // Disable GPU acceleration
+            ],
         });
 
         const page = await browser.newPage();

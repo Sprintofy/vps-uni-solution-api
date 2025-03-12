@@ -43,11 +43,31 @@ class StockModel extends BaseModel {
         return await this._executeQuery(query, [id]);
     }
 
+    // ----------------- used IGNORE but Primary key is stock_id change it to --> script_code
     async saveStock(data: any) {
         console.log("inside model ",data)
-        const query = `INSERT INTO stock_master SET ? ;`;
+        const query = `INSERT IGNORE INTO stock_master SET ? ;`;
         return await this._executeQuery(query, [data]);
     }
+
+    //--------------------- alternative way --------------------------
+    async saveStock2 (data: any) {
+        console.log("Checking if stock exists:", data);
+
+        const existingStockQuery = `SELECT * FROM stock_master WHERE script_code = ?`;
+        const existingStock = await this._executeQuery(existingStockQuery, [data.script_code]);
+
+        if (existingStock && existingStock.length > 0) {
+          console.log("Stock already exists, skipping insert:", data);
+          return;  // Skip insertion
+        }
+
+        const insertQuery = `INSERT INTO stock_master SET ?`;
+        return await this._executeQuery(insertQuery, [data]);
+      };
+
+      ///------------------- END ---------------------------
+
 
 
 }

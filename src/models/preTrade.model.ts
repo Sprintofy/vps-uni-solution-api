@@ -164,9 +164,9 @@ class ClientTradeModel extends BaseModel {
     }
 
 
-    async fetch_trade_proof_details(client_id: number) {
+    async fetch_trade_proof_details(pre_proof_id: number) {
         const query = `SELECT * FROM pre_trades WHERE pre_proof_id = ? `;
-        return await this._executeQuery(query, [client_id]);
+        return await this._executeQuery(query, [pre_proof_id]);
     }
 
     async save_pre_trade(data: any) {

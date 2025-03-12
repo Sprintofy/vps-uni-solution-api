@@ -50,6 +50,7 @@ export default {
     fetch_trades_details_by_client_id: {
         [Segments.QUERY]: Joi.object().keys({
             client_id: Joi.number().integer().required(),
+            proof_id:Joi.number().integer().required(),
         }).unknown(true).options({ abortEarly: false }) // Disallow extra fields in the body
     },
 
