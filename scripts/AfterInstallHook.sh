@@ -4,6 +4,10 @@ set -e
 # Navigate to the project directory
 cd /home/ubuntu/uni-solution-api
 
+# Remove existing node_modules and package-lock.json
+rm -rf node_modules package-lock.json
+echo "Removed existing node_modules and package-lock.json"
+
 # Install dependencies
 npm install
 
