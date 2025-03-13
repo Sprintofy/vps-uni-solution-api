@@ -1266,7 +1266,7 @@ const read_email_client_scheduler= async (body: any) => {
         let date = moment().format('YYYY-MM-DD');// Get today's date
         let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 7:00 AM IST
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
-        let query= `{from:${ body.results[0].client_email.replace(/\.(?=[^@]*@)/g, "")} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
+        let query= `{from:${ body.results[0].client_email} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
 
 
         console.log("date",date)
