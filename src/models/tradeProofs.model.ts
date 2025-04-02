@@ -220,7 +220,9 @@ class TradeProofsModel extends BaseModel {
     }
 
     async fetch_all_trade_proof_email_not_received(organization_id:number,date:any) {
-        const query = `SELECT pre_trade_proof_id,c.client_id, c.client_code ,ptp.created_date,c.email as client_email
+        const query = `SELECT pre_trade_proof_id,c.client_id, c.client_code,
+                    ptp.created_date,c.email as client_email,
+                    c.is_auto_reply,DATE_FORMAT(ptp.created_date, '%Y-%m-%d %H:%i:%s') AS formatted_date
                     FROM pre_trade_proofs ptp  
                     LEFT JOIN clients c ON c.client_id = ptp.client_id
                     WHERE 

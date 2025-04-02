@@ -1014,11 +1014,17 @@ const read_email_proof_wise = async (req: any) => {
         }
         // Replace with the required subject
         const subject = "Pre Trade Confirmation "+results[0].client_code;
+
         console.log("results[0].created_date",results[0].created_date)
+
         let date = moment(results[0].created_date).format('YYYY-MM-DD');// Get today's date
+
         const timeIST = moment(results[0].formatted_date, "YYYY-MM-DD HH:mm:ss").subtract(2, 'minutes').format("HH:mm");
+
         console.log("timeIST--->",timeIST)
+
         let startTime = moment(`${date} ${timeIST}`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
+
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
 
         let query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
@@ -1262,12 +1268,23 @@ const read_email_client_scheduler= async (body: any) => {
 
         // Replace with the required subject
         // const subject = "Pre Trade Confirmation";
-        const subject = body.results[0].client_code;
-        let date = moment().format('YYYY-MM-DD');// Get today's date
-        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 7:00 AM IST
+        const subject = "Pre Trade Confirmation "+body.results[0].client_code;
+
+        let date = moment(body.results[0].created_date).format('YYYY-MM-DD');// Get today's date
+
+        let timeIST = moment(body.results[0].formatted_date, "YYYY-MM-DD HH:mm:ss").subtract(2, 'minutes').format("HH:mm");
+
+        let startTime = moment(`${date} ${timeIST}`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 7:00 AM IST
+
         let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
+
         let query= `{from:${ body.results[0].client_email} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
 
+        if( body.results[0].is_auto_reply ) {
+
+            const endTimeIST = moment(body.results[0].formatted_date, "YYYY-MM-DD HH:mm:ss").add(25, 'minutes').format("HH:mm");
+            endTime = moment(`${date} ${endTimeIST}`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
+        }
 
         console.log("date",date)
         console.log("startTime",startTime)
