@@ -60,6 +60,7 @@ const fetch_trades_details_by_client_id: IController = async (req: any, res: any
 
 const save_trades_by_client: IController = async (req: any, res: any) => {
     try {
+        console.log("hashsjsjsksmsmsmslsmslsmlssmslslslms------------------>")
          let results = await clientTradeService.save_trades_by_client(req);
          apiResponse.success(res, httpStatusCodes.OK, MESSAGES.COMMON.SUCCESS.FETCH, results)
     } catch (error: any) {
