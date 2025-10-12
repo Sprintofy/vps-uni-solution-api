@@ -30,7 +30,7 @@ class TradeProofsModel extends BaseModel {
         query += " LIMIT ? OFFSET ? ;";
 
         parameters.push(limit, offset);
-        console.log(query)
+
         return await this._executeQuery(query, parameters)
     }
 
@@ -41,7 +41,7 @@ class TradeProofsModel extends BaseModel {
                 FROM pre_trade_proofs pft
                 LEFT JOIN pre_trades pt ON pt.pre_proof_id = pft.pre_trade_proof_id
                 WHERE pft.client_id =  ? `;
-        console.log(query)
+     
         return await this._executeQuery(query, parameters)
     }
 

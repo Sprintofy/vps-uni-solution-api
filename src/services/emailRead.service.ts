@@ -224,12 +224,6 @@ const read_email = async (req: any) => {
             endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
             query= `subject:"${subject}" after:${startTime} before:${endTime}`
         }
-
-        console.log("date",date)
-        console.log("startTime",startTime)
-        console.log("endTime",endTime)
-        console.log("query",query)
-
         const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
 
         if(!results.length) {
@@ -1032,7 +1026,7 @@ const read_email_proof_wise = async (req: any) => {
         console.log("date",date)
         console.log("startTime",startTime)
         console.log("endTime",endTime)
-        console.log("query",query)
+
 
         const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
 

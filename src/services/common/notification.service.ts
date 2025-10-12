@@ -558,7 +558,7 @@ const generatePreTradePdfSampleFile = async(organization_id:any,data:any)=> {
 }
 
 const readPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
-    console.log("readPreTradeEmailToClientOrganizationWise",organization_id)
+
     await emailService.readOrganizationWiseEmail(organization_id,null);
 }
 
@@ -650,7 +650,7 @@ const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any)
 };
 
 const sendPreTradeSingleEmailToClient= async(organization_id:any,trade_info:any)=> {
-    console.log("sendPreTradeSingleEmailToClient",organization_id)
+
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
 
     const mailOptions = {

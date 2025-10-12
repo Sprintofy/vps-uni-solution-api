@@ -32,7 +32,7 @@ class ClientTradeModel extends BaseModel {
         sort && sort.key !=="" && sort.order !=="" ? query += " ORDER BY " + sort.key + " " + sort.order : query += " "
 
         query += " LIMIT ? OFFSET ? ;";
-        console.log(query)
+
         parameters.push(limit, offset);
 
         return await this._executeQuery(query, parameters)
@@ -97,7 +97,6 @@ class ClientTradeModel extends BaseModel {
         // search_text !== undefined && search_text !== null && search_text !== "" ? (query+="  AND  client_name LIKE ?  ", parameters.push('%' + search_text + '%')):""
 
         query+=` GROUP BY pft.client_id `;
-        console.log(query)
         return await this._executeQuery(query, parameters)
     }
 
