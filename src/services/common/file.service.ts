@@ -129,6 +129,7 @@ const deleteFile = async (filePath: string): Promise<void> => {
 
 const uploadPdfFileToS3Bucket = async (organization_id:any,body: any) => {
     try {
+        console.log("uploadPdfFileToS3Bucket",organization_id)
         // Process the form to get the image information
         const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+organization_id+'/pdfs' ;
 
@@ -152,6 +153,7 @@ const uploadPdfFileToS3Bucket = async (organization_id:any,body: any) => {
 
 const uploadSampleEmailPdfFileToS3Bucket = async (organization_id:any,body: any) => {
     try {
+        console.log("uploadSampleEmailPdfFileToS3Bucket",organization_id)
         // Process the form to get the image information
         const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+organization_id+'/sample_email_pdfs' ;
 
@@ -175,6 +177,7 @@ const uploadSampleEmailPdfFileToS3Bucket = async (organization_id:any,body: any)
 
 const uploadZipFileToS3Bucket = async (organization_id:any,body: any) => {
     try {
+        console.log("uploadZipFileToS3Bucket",organization_id)
         // Process the form to get the image information
         const s3FolderPath = CONSTANTS.AWS.S3_BUCKET.FOLDER_NAME + '/organization_'+organization_id+'/zipped' ;
 
@@ -197,6 +200,7 @@ const uploadZipFileToS3Bucket = async (organization_id:any,body: any) => {
 
 const uploadEmailFileToS3Bucket = async (organization_id:any,body: any) => {
     try {
+        console.log("uploadEmailFileToS3Bucket",organization_id)
         // Process the form to get the image information
 
         const filePath = body.file_path;
