@@ -12,6 +12,8 @@ import fileService from "./file.service";
 const phantomPath = path.resolve(__dirname, '../../../../node_modules/phantomjs-prebuilt/bin/phantomjs');
 
 const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
+
+    console.log("sendPreTradeEmailToClientOrganizationWise",organization_id);
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
 
     let emailBody = `<!DOCTYPE html>
@@ -100,7 +102,7 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
 }
 
 const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:any)=> {
-
+    console.log("generateSampleEmailPreTradeClientWise",organization_id);
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
 
     let emailBody = `<!DOCTYPE html>
@@ -207,6 +209,7 @@ const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:a
 }
 
 const generateSampleEmailBodyPreTradeClientWise = async(organization_id:any,client:any)=> {
+    console.log("generateSampleEmailBodyPreTradeClientWise",organization_id);
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
     let emailBody = `<!DOCTYPE html>
                 <html>
@@ -555,7 +558,7 @@ const generatePreTradePdfSampleFile = async(organization_id:any,data:any)=> {
 }
 
 const readPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
-
+    console.log("readPreTradeEmailToClientOrganizationWise",organization_id)
     await emailService.readOrganizationWiseEmail(organization_id,null);
 }
 
@@ -647,7 +650,7 @@ const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any)
 };
 
 const sendPreTradeSingleEmailToClient= async(organization_id:any,trade_info:any)=> {
-
+    console.log("sendPreTradeSingleEmailToClient",organization_id)
     const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
 
     const mailOptions = {
