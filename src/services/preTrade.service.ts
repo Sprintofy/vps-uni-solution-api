@@ -216,7 +216,7 @@ const add_client_info_in_pre_trade = async(req:any,fields:any,data:any)=> {
 
         //console.log("uniqueClientCodes",uniqueClientCodes);
 
-        const clients = await clientModel.fetchClientInfoByIds(uniqueClientCodes,fields.organization_id);
+        const clients = await clientModel.fetchClientInfoByIds(uniqueClientCodes,fields.organization_id || 1);
 
         //console.log("client_info length",clients.length)
 
@@ -230,7 +230,7 @@ const add_client_info_in_pre_trade = async(req:any,fields:any,data:any)=> {
                     client_name: client.client_name,
                     email: client.email,
                     mobile: client.mobile,
-                    organization_id:client.organization_id,
+                    organization_id:client.organization_id || 1,
                     status:1,
                     comment:'Record Saved.'
                 };
@@ -324,10 +324,10 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
 
         if(client_info.unique_trade_info.length) {
 
-            const email_sample = await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(client_info.organization_id,client_info)
+            const email_sample = await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(client_info.organization_id || 1 ,client_info)
 
             // pdf creation pre-trade
-            const pdf_sample = await emailNotificationServiceService.generatePreTradePdfSampleFile(client_info.organization_id,client_info)
+            const pdf_sample = await emailNotificationServiceService.generatePreTradePdfSampleFile(client_info.organization_id || 1,client_info)
 
             // Save pre-trade proofs and get the proof ID
             const emailProof = await save_pre_trade_proofs(req,{
@@ -350,9 +350,9 @@ const save_bulk_trades_by_client = async(req:any,client:any)=> {
 
             await Promise.all(saveTradePromises);
 
-            emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
+            emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id || 1,req.body)
 
-            emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
+            emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id || 1,client_info)
 
         }
         return true;
@@ -408,10 +408,10 @@ const save_trades_by_client = async(req:any)=> {
 
         await Promise.all(saveTradePromises);
 
-         emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id,req.body)
+         emailNotificationServiceService.generatePreTradePdfFileClientWise(client_info.organization_id || 1,req.body)
 
         // send email to client pre-trade
-         emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id,client_info)
+         emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(client_info.organization_id || 1,client_info)
 
         // req.body.is_email_sent = 1;
         // req.body.email_response = JSON.stringify(email_response);
