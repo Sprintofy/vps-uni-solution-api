@@ -8,7 +8,7 @@
   "scripts": {
     "tsc": "tsc",
     "start": "ts-node server.ts",
-    "dev": "node --max-old-space-size=4096 ./node_modules/.bin/ts-node-dev server.ts",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 ts-node-dev --respawn --transpile-only server.ts",
     "prod": "pm2 stop all && pm2 kill && pm2 start pm2.config.js",
     "build": "tsc"
   },
@@ -25,7 +25,6 @@
   "homepage": "https://github.com/pravin2151/uni-solution-api#readme",
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
-    "@types/axios": "^0.9.36",
     "archiver": "^7.0.1",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.7.9",
@@ -74,6 +73,7 @@
     "@types/puppeteer-core": "^7.0.4",
     "@types/uuid": "^9.0.8",
     "@types/uuid4": "^2.0.3",
+    "cross-env": "^7.0.3",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
