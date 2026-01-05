@@ -11,10 +11,131 @@ import organizationConfigModel from '../../models/organizationConfig.model'
 import fileService from "./file.service";
 const phantomPath = path.resolve(__dirname, '../../../../node_modules/phantomjs-prebuilt/bin/phantomjs');
 
-const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
+// ============== EMAIL QUEUE SYSTEM ==============
+interface EmailTask {
+    organization_id: any;
+    mailOptions: any;
+    client: any;
+    retryCount: number;
+}
 
-    console.log("sendPreTradeEmailToClientOrganizationWise",organization_id);
-    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
+class EmailQueue {
+    private queue: EmailTask[] = [];
+    private isProcessing: boolean = false;
+    private readonly DELAY_BETWEEN_EMAILS = 3000; // 3 seconds between emails
+    private readonly MAX_RETRIES = 3;
+    private readonly RETRY_DELAY = 60000; // 1 minute retry delay for failed emails
+
+    // Add email to queue
+    add(task: EmailTask) {
+        this.queue.push(task);
+        this.processQueue();
+    }
+
+    // Process queue
+    private async processQueue() {
+        if (this.isProcessing || this.queue.length === 0) return;
+        
+        this.isProcessing = true;
+
+        while (this.queue.length > 0) {
+            const task = this.queue.shift();
+            if (task) {
+                await this.sendEmail(task);
+                // Wait before sending next email
+                await this.delay(this.DELAY_BETWEEN_EMAILS);
+            }
+        }
+
+        this.isProcessing = false;
+    }
+
+    // Send single email with retry logic
+    private async sendEmail(task: EmailTask) {
+        try {
+            const email_response = await emailService.sendOrganizationWiseEmail(
+                task.organization_id, 
+                task.mailOptions
+            );
+
+            if (email_response) {
+                await tradeProofModel.update_pre_trade_proofs(
+                    { is_email_sent: 1, email_response: JSON.stringify(email_response) },
+                    task.client.pre_proof_id
+                );
+                console.log(`✅ Email sent successfully to: ${task.client.email}`);
+            } else {
+                throw new Error('Email response was falsy');
+            }
+        } catch (error: any) {
+            console.error(`❌ Email failed for ${task.client.email}:`, error.message);
+
+            // Check if it's a rate limit error (421)
+            if (error.responseCode === 421 && task.retryCount < this.MAX_RETRIES) {
+                console.log(`🔄 Retrying ${task.client.email} in ${this.RETRY_DELAY/1000}s (Attempt ${task.retryCount + 1}/${this.MAX_RETRIES})`);
+                
+                // Add back to queue with incremented retry count after delay
+                setTimeout(() => {
+                    this.add({
+                        ...task,
+                        retryCount: task.retryCount + 1
+                    });
+                }, this.RETRY_DELAY);
+            } else {
+                // Log permanent failure
+                await tradeProofModel.update_pre_trade_proofs(
+                    { 
+                        is_email_sent: 0, 
+                        email_response: JSON.stringify({ error: error.message, failed_at: new Date() })
+                    },
+                    task.client.pre_proof_id
+                );
+                console.error(`❌ Email permanently failed for: ${task.client.email}`);
+            }
+        }
+    }
+
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Get queue status
+    getStatus() {
+        return {
+            pending: this.queue.length,
+            isProcessing: this.isProcessing
+        };
+    }
+}
+
+// Create singleton instance
+const emailQueue = new EmailQueue();
+
+// ============== HELPER FUNCTION FOR SAFE MAP ==============
+const safeMap = (array: any[], mapFn: (item: any, index: number) => string): string => {
+    if (!array || !Array.isArray(array) || array.length === 0) {
+        return '<tr><td colspan="8">No trade information available</td></tr>';
+    }
+    return array.map(mapFn).join('');
+};
+
+// ============== UPDATED FUNCTIONS ==============
+
+const sendPreTradeEmailToClientOrganizationWise = async (organization_id: any, client: any) => {
+    console.log("sendPreTradeEmailToClientOrganizationWise", organization_id);
+
+    // Validate client data
+    if (!client || !client.unique_trade_info) {
+        console.error("Invalid client data - missing unique_trade_info for client:", client?.client_code);
+        return false;
+    }
+
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id);
+
+    if (!organizations_config || organizations_config.length === 0) {
+        console.error("Organization config not found for:", organization_id);
+        return false;
+    }
 
     let emailBody = `<!DOCTYPE html>
                 <html>
@@ -32,17 +153,17 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
                     </style>
                 </head>
                 <body>
-               <p>Dear ${client.client_name},</p>
+               <p>Dear ${client.client_name || 'Valued Client'},</p>
                <p>As per your instructions this is a pre-trade confirmation for your client code. Please find the details below:</p>
                 <h2>Client Information</h2>
                   <table>
                     <tr>
                       <td><strong>Client Code</strong></td>
-                      <td>${client.client_code}</td>
+                      <td>${client.client_code || 'N/A'}</td>
                     </tr>
                     <tr>
                       <td><strong>Name</strong></td>
-                      <td>${client.client_name}</td>
+                      <td>${client.client_name || 'N/A'}</td>
                     </tr>
                   </table>
                   <h2>Trade Orders:</h2>
@@ -60,50 +181,63 @@ const sendPreTradeEmailToClientOrganizationWise = async(organization_id:any,clie
           </tr>
         </thead>
         <tbody>
-          ${client.unique_trade_info
-        .map((trade:any) => `
+          ${safeMap(client.unique_trade_info, (trade: any) => `
           <tr>
-            <td>${trade.exchange_code}</td>
+            <td>${trade.exchange_code || ''}</td>
             <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
-            <td>${trade.product}</td>
-            <td>${trade.script_name}</td>
-            <td>${trade.quantity}</td>
-            <td>${trade.order_type}</td>
-            <td>${trade.price}</td>
-            <td>${trade.trigger_price}</td>
+            <td>${trade.product || ''}</td>
+            <td>${trade.script_name || ''}</td>
+            <td>${trade.quantity || ''}</td>
+            <td>${trade.order_type || ''}</td>
+            <td>${trade.price || ''}</td>
+            <td>${trade.trigger_price || ''}</td>
           </tr>`
-        )
-        .join('')}
+          )}
         </tbody>
       </table>
       <div>
-      <p>Kindly reply to this email to  execute the above mentioned trades at our end. </p>
+      <p>Kindly reply to this email to execute the above mentioned trades at our end.</p>
       <p></p>
       <p>Best Regards,</p>
-      ${organizations_config[0].email_regards}
+      ${organizations_config[0].email_regards || ''}
       </div>
     </div>
   </body>
   </html>`;
 
     const mailOptions = {
-        from: organizations_config[0].from_email ,
+        from: organizations_config[0].from_email,
         to: [client.email],
-        subject: organizations_config[0].email_subject+" "+client.client_code,
+        subject: organizations_config[0].email_subject + " " + client.client_code,
         html: emailBody,
     };
-    const email_response = await emailService.sendOrganizationWiseEmail(organization_id,mailOptions);
-    if(email_response) {
-        await tradeProofModel.update_pre_trade_proofs({is_email_sent:1,email_response:JSON.stringify(email_response)},client.pre_proof_id)
-    } else {
-        console.error("Email send to Failed..",client.email,"Error --->",email_response);
-    }
-    return true;
-}
 
-const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:any)=> {
-    console.log("generateSampleEmailPreTradeClientWise",organization_id);
-    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
+    // Add to queue instead of sending directly
+    emailQueue.add({
+        organization_id,
+        mailOptions,
+        client,
+        retryCount: 0
+    });
+
+    return true;
+};
+
+const generateSampleEmailPreTradeClientWise = async (organization_id: any, client: any) => {
+    console.log("generateSampleEmailPreTradeClientWise", organization_id);
+
+    // Validate client data
+    if (!client || !client.unique_trade_info) {
+        console.error("Invalid client data - missing unique_trade_info");
+        return null;
+    }
+
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id);
+
+    if (!organizations_config || organizations_config.length === 0) {
+        console.error("Organization config not found");
+        return null;
+    }
 
     let emailBody = `<!DOCTYPE html>
                 <html>
@@ -121,17 +255,17 @@ const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:a
                     </style>
                 </head>
                 <body>
-               <p>Dear ${client.client_name},</p>
+               <p>Dear ${client.client_name || 'Valued Client'},</p>
                <p>As per your instructions this is a pre-trade confirmation for your client code. Please find the details below:</p>
                 <h2>Client Information</h2>
                   <table>
                     <tr>
                       <td><strong>Client Code</strong></td>
-                      <td>${client.client_code}</td>
+                      <td>${client.client_code || 'N/A'}</td>
                     </tr>
                     <tr>
                       <td><strong>Name</strong></td>
-                      <td>${client.client_name}</td>
+                      <td>${client.client_name || 'N/A'}</td>
                     </tr>
                   </table>
                   <h2>Trade Orders:</h2>
@@ -149,27 +283,25 @@ const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:a
           </tr>
         </thead>
         <tbody>
-          ${client.unique_trade_info
-        .map((trade:any) => `
+          ${safeMap(client.unique_trade_info, (trade: any) => `
           <tr>
-            <td>${trade.exchange_code}</td>
+            <td>${trade.exchange_code || ''}</td>
             <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
-            <td>${trade.product}</td>
-            <td>${trade.script_name}</td>
-            <td>${trade.quantity}</td>
-            <td>${trade.order_type}</td>
-            <td>${trade.price}</td>
-            <td>${trade.trigger_price}</td>
+            <td>${trade.product || ''}</td>
+            <td>${trade.script_name || ''}</td>
+            <td>${trade.quantity || ''}</td>
+            <td>${trade.order_type || ''}</td>
+            <td>${trade.price || ''}</td>
+            <td>${trade.trigger_price || ''}</td>
           </tr>`
-        )
-        .join('')}
+          )}
         </tbody>
       </table>
       <div>
-      <p>Kindly reply to this email to  execute the above mentioned trades at our end. </p>
+      <p>Kindly reply to this email to execute the above mentioned trades at our end.</p>
       <p></p>
       <p>Best Regards,</p>
-      ${organizations_config[0].email_regards}
+      ${organizations_config[0].email_regards || ''}
       </div>
     </div>
   </body>
@@ -177,40 +309,43 @@ const generateSampleEmailPreTradeClientWise = async(organization_id:any,client:a
 
     // Launch Puppeteer to generate PDF
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
+        executablePath: '/usr/bin/google-chrome-stable',
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
-    // const browser = await puppeteer.launch({
-    //     headless: true,
-    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
-    // });
-    const page = await browser.newPage();
 
-    // Set HTML content
+    const page = await browser.newPage();
     await page.setContent(emailBody);
 
-    // Generate PDF
-
     const file_name = `${client.client_code}_sample_email_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-    const uploadDir = path.join(__dirname, '../../../../public/upload'); // Create directory path relative to the current script
+    const uploadDir = path.join(__dirname, '../../../../public/upload');
     const file_path = path.join(uploadDir, file_name);
 
-
     await page.pdf({ path: file_path, format: 'A4', printBackground: true });
-    // Close the browser
     await browser.close();
 
-    const aws_s3_url = await fileService.uploadSampleEmailPdfFileToS3Bucket(organization_id,{file_name,file_path})
+    const aws_s3_url = await fileService.uploadSampleEmailPdfFileToS3Bucket(organization_id, { file_name, file_path });
 
     fs.unlinkSync(file_path);
     return aws_s3_url;
+};
 
-}
+const generateSampleEmailBodyPreTradeClientWise = async (organization_id: any, client: any) => {
+    console.log("generateSampleEmailBodyPreTradeClientWise", organization_id);
 
-const generateSampleEmailBodyPreTradeClientWise = async(organization_id:any,client:any)=> {
-    console.log("generateSampleEmailBodyPreTradeClientWise",organization_id);
-    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
+    // Validate client data
+    if (!client) {
+        console.error("Invalid client data");
+        return null;
+    }
+
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id);
+
+    if (!organizations_config || organizations_config.length === 0) {
+        console.error("Organization config not found");
+        return null;
+    }
+
     let emailBody = `<!DOCTYPE html>
                 <html>
                 <head>
@@ -227,17 +362,17 @@ const generateSampleEmailBodyPreTradeClientWise = async(organization_id:any,clie
                     </style>
                 </head>
                 <body>
-               <p>Dear ${client.client_name},</p>
+               <p>Dear ${client.client_name || 'Valued Client'},</p>
                <p>As per your instructions this is a pre-trade confirmation for your client code. Please find the details below:</p>
                 <h2>Client Information</h2>
                   <table>
                     <tr>
                       <td><strong>Client Code</strong></td>
-                      <td>${client.client_code}</td>
+                      <td>${client.client_code || 'N/A'}</td>
                     </tr>
                     <tr>
                       <td><strong>Name</strong></td>
-                      <td>${client.client_name}</td>
+                      <td>${client.client_name || 'N/A'}</td>
                     </tr>
                   </table>
                   <h2>Trade Orders:</h2>
@@ -255,38 +390,44 @@ const generateSampleEmailBodyPreTradeClientWise = async(organization_id:any,clie
           </tr>
         </thead>
         <tbody>
-          ${client.unique_trade_info
-        .map((trade:any) => `
+          ${safeMap(client.unique_trade_info, (trade: any) => `
           <tr>
-            <td>${trade.exchange_code}</td>
+            <td>${trade.exchange_code || ''}</td>
             <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
-            <td>${trade.product}</td>
-            <td>${trade.script_name}</td>
-            <td>${trade.quantity}</td>
-            <td>${trade.order_type}</td>
-            <td>${trade.price}</td>
-            <td>${trade.trigger_price}</td>
+            <td>${trade.product || ''}</td>
+            <td>${trade.script_name || ''}</td>
+            <td>${trade.quantity || ''}</td>
+            <td>${trade.order_type || ''}</td>
+            <td>${trade.price || ''}</td>
+            <td>${trade.trigger_price || ''}</td>
           </tr>`
-        )
-        .join('')}
+          )}
         </tbody>
       </table>
       <div>
-      <p>Kindly reply to this email to  execute the above mentioned trades at our end. </p>
+      <p>Kindly reply to this email to execute the above mentioned trades at our end.</p>
       <p></p>
       <p>Best Regards,</p>
-      ${organizations_config[0].email_regards}
+      ${organizations_config[0].email_regards || ''}
       </div>
     </div>
   </body>
   </html>`;
     return emailBody;
+};
 
-}
+const generatePreTradePdfFileClientWise = async (organization_id: any, data: any) => {
+    
+    // ✅ FIX: Validate data before processing
+    if (!data) {
+        console.error("generatePreTradePdfFileClientWise: data is undefined");
+        return false;
+    }
 
-const generatePreTradePdfFileClientWise = async(organization_id:any,data:any)=> {
-
-    // todo fetch Email/template config From Organization wise
+    if (!data.unique_trade_info || !Array.isArray(data.unique_trade_info)) {
+        console.error("generatePreTradePdfFileClientWise: unique_trade_info is undefined or not an array for client:", data?.client_code);
+        return false;
+    }
 
     const htmlContent = `<!DOCTYPE html>
     <html lang="en">
@@ -339,11 +480,10 @@ const generatePreTradePdfFileClientWise = async(organization_id:any,data:any)=> 
         <p><strong>To,</strong><br> MOFSL</p>
         <p>
             You are requested to execute the following trades in my trading account bearing client code number 
-            <strong>${data.client_code}</strong> with Motilal Oswal Financial Services Ltd., as per the details mentioned below.
+            <strong>${data.client_code || 'N/A'}</strong> with Motilal Oswal Financial Services Ltd., as per the details mentioned below.
             Kindly confirm the execution to me through your regular format.
         </p>
         
-        <!-- First Table: Trade Information -->
         <table>
             <thead>
                 <tr>
@@ -356,29 +496,28 @@ const generatePreTradePdfFileClientWise = async(organization_id:any,data:any)=> 
                 </tr>
             </thead>
             <tbody>
-                ${data.unique_trade_info.map((trade: any, index: any) => `
+                ${safeMap(data.unique_trade_info, (trade: any, index: number) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${trade.script_name || ''}</td>
-                   <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
+                    <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
                     <td>${trade.quantity || ''}</td>
-                    <td>${trade.price}</td>
-                     <td>${trade.trigger_price}</td>
+                    <td>${trade.price || ''}</td>
+                    <td>${trade.trigger_price || ''}</td>
                 </tr>`
-    ).join('')}
+                )}
         </tbody>
         </table>
 
-        <!-- Second Table: Client Information -->
         <table>
             <tbody>
                 <tr>
                     <td><strong>Client Code:</strong></td>
-                    <td>${data.client_code}</td>
+                    <td>${data.client_code || 'N/A'}</td>
                 </tr>
                 <tr>
                     <td><strong>Client Name:</strong></td>
-                    <td>${data.client_name}</td>
+                    <td>${data.client_name || 'N/A'}</td>
                 </tr>
                 <tr>
                     <td><strong>Client Signature:</strong></td>
@@ -398,52 +537,55 @@ const generatePreTradePdfFileClientWise = async(organization_id:any,data:any)=> 
 </body>
     </html>`;
 
-    // Launch Puppeteer to generate PDF
-    const browser = await puppeteer.launch({
-       // executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage', // Prevents memory issues
-            '--disable-accelerated-2d-canvas',
-            '--disable-gpu' // Disable GPU acceleration
-        ],
-    });
-    // const browser = await puppeteer.launch({
-    //     headless: true,
-    //     args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Prevent permission issues
-    // });
-   const page = await browser.newPage();
+    try {
+        const browser = await puppeteer.launch({
+            executablePath: '/usr/bin/google-chrome-stable',
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu'
+            ],
+        });
 
-    // Set HTML content
-     await page.setContent(htmlContent);
+        const page = await browser.newPage();
+        await page.setContent(htmlContent);
 
-    // Generate PDF
+        const file_name = `${data.client_code}_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
+        const uploadDir = path.join(__dirname, '../../../../public/upload');
+        const file_path = path.join(uploadDir, file_name);
 
-    const file_name = `${data.client_code}_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-    const uploadDir = path.join(__dirname, '../../../../public/upload'); // Create directory path relative to the current script
-    const file_path = path.join(uploadDir, file_name);
+        console.log(file_path);
 
-    console.log(file_path);
+        await page.pdf({ path: file_path, format: 'A4', printBackground: true });
+        await browser.close();
 
-     await page.pdf({ path: file_path, format: 'A4', printBackground: true });
-    // Close the browser
-     await browser.close();
-     // await generatePdfFile(htmlContent, file_path);
+        const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id, { file_name, file_path });
 
-    const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id,{file_name,file_path})
+        if (aws_s3_url) {
+            await tradeProofModel.update_pre_trade_proofs({ pdf_url: aws_s3_url }, data.pre_proof_id);
+        } else {
+            console.error("Generate Pdf URL Failed --->", data.client_code);
+        }
+        
+        fs.unlinkSync(file_path);
+        return true;
 
-    if(aws_s3_url) {
-        await tradeProofModel.update_pre_trade_proofs({pdf_url:aws_s3_url},data.pre_proof_id)
-    } else {
-        console.error(" Generate Pdf ULR Failed --->",data.client_code);
+    } catch (error) {
+        console.error("Error in generatePreTradePdfFileClientWise:", error);
+        return false;
     }
-    fs.unlinkSync(file_path);
-    return true;
-}
+};
 
-const generatePreTradePdfSampleFile = async(organization_id:any,data:any)=> {
+const generatePreTradePdfSampleFile = async (organization_id: any, data: any) => {
+
+    // Validate data
+    if (!data || !data.unique_trade_info) {
+        console.error("generatePreTradePdfSampleFile: Invalid data");
+        return null;
+    }
 
     const htmlContent = `<!DOCTYPE html>
         <html lang="en">
@@ -496,11 +638,10 @@ const generatePreTradePdfSampleFile = async(organization_id:any,data:any)=> {
         <p><strong>To,</strong><br> MOFSL</p>
         <p>
             You are requested to execute the following trades in my trading account bearing client code number 
-            <strong>${data.client_code}</strong> with Motilal Oswal Financial Services Ltd., as per the details mentioned below.
+            <strong>${data.client_code || 'N/A'}</strong> with Motilal Oswal Financial Services Ltd., as per the details mentioned below.
             Kindly confirm the execution to me through your regular format.
         </p>
         
-        <!-- First Table: Trade Information -->
         <table>
             <thead>
                 <tr>
@@ -513,29 +654,28 @@ const generatePreTradePdfSampleFile = async(organization_id:any,data:any)=> {
                 </tr>
             </thead>
             <tbody>
-                ${data.unique_trade_info.map((trade: any, index: any) => `
+                ${safeMap(data.unique_trade_info, (trade: any, index: number) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${trade.script_name || ''}</td>
-                   <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
+                    <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
                     <td>${trade.quantity || ''}</td>
-                    <td>${trade.price}</td>
-                     <td>${trade.trigger_price}</td>
+                    <td>${trade.price || ''}</td>
+                    <td>${trade.trigger_price || ''}</td>
                 </tr>`
-    ).join('')}
+                )}
         </tbody>
         </table>
 
-        <!-- Second Table: Client Information -->
         <table>
             <tbody>
                 <tr>
                     <td><strong>Client Code:</strong></td>
-                    <td>${data.client_code}</td>
+                    <td>${data.client_code || 'N/A'}</td>
                 </tr>
                 <tr>
                     <td><strong>Client Name:</strong></td>
-                    <td>${data.client_name}</td>
+                    <td>${data.client_name || 'N/A'}</td>
                 </tr>
                 <tr>
                     <td><strong>Client Signature:</strong></td>
@@ -555,77 +695,63 @@ const generatePreTradePdfSampleFile = async(organization_id:any,data:any)=> {
 </body>
         </html>`;
     return htmlContent;
-}
+};
 
-const readPreTradeEmailToClientOrganizationWise = async(organization_id:any,client:any)=> {
+const readPreTradeEmailToClientOrganizationWise = async (organization_id: any, client: any) => {
+    await emailService.readOrganizationWiseEmail(organization_id, null);
+};
 
-    await emailService.readOrganizationWiseEmail(organization_id,null);
-}
-
-const generatePreTradeEmailPdfClientWise_old = async(organization_id:any,data:any)=> {
-
-    // todo fetch Email/template config From Organization wise
+const generatePreTradeEmailPdfClientWise_old = async (organization_id: any, data: any) => {
 
     const htmlContent = data.htmlContent;
 
-    // Launch Puppeteer to generate PDF
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
+        executablePath: '/usr/bin/google-chrome-stable',
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],  // Disable sandboxing
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
 
-    // Set HTML content
     await page.setContent(htmlContent);
 
-    // Generate PDF
-
     const file_name = `${data.client_code}_${moment().format('DD_MM_YYYY_HH-mm-ss')}.pdf`;
-    const uploadDir = path.join(__dirname, '../../../../public/upload'); // Create directory path relative to the current script
+    const uploadDir = path.join(__dirname, '../../../../public/upload');
     const file_path = path.join(uploadDir, file_name);
 
     console.log(file_path);
 
     await page.pdf({ path: file_path, format: 'A4', printBackground: true });
-    // Close the browser
     await browser.close();
-    // await generatePdfFile(htmlContent, file_path);
 
-    const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id,{file_name,file_path})
+    const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id, { file_name, file_path });
 
     fs.unlinkSync(file_path);
     return aws_s3_url;
-}
+};
 
-const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any) => {
+const generatePreTradeEmailPdfClientWise = async (organization_id: any, data: any) => {
     try {
-
-        // Ensure the upload directory exists
         const uploadDir = path.join(__dirname, '../../../../public/upload');
         if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true }); // Create if not exists
+            fs.mkdirSync(uploadDir, { recursive: true });
         }
 
-        // Launch Puppeteer
         const browser = await puppeteer.launch({
-            //executablePath: '/usr/bin/google-chrome-stable',  // Path for Google Chrome installed via APT
+            executablePath: '/usr/bin/google-chrome-stable',  // ← ADD THIS!
             headless: true,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage', // Prevents memory issues
+                '--disable-dev-shm-usage',
                 '--disable-accelerated-2d-canvas',
-                '--disable-gpu' // Disable GPU acceleration
+                '--disable-gpu'
             ],
         });
 
         const page = await browser.newPage();
 
-        // Set HTML content
         await page.setContent(data.htmlContent, { waitUntil: 'load' });
 
-        // Generate PDF
         const file_name = `${data.client_code}_${moment().format('DDMMYYYY_HH-mm-ss')}.pdf`;
         const file_path = path.join(uploadDir, file_name);
 
@@ -633,13 +759,10 @@ const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any)
 
         await page.pdf({ path: file_path, format: 'A4', printBackground: true });
 
-        // Close browser
         await browser.close();
 
-        // Upload PDF to S3
         const aws_s3_url = await fileService.uploadEmailFileToS3Bucket(organization_id, { file_name, file_path });
 
-        // Remove local file after uploading
         fs.unlinkSync(file_path);
 
         return aws_s3_url;
@@ -649,34 +772,49 @@ const generatePreTradeEmailPdfClientWise = async (organization_id:any, data:any)
     }
 };
 
-const sendPreTradeSingleEmailToClient= async(organization_id:any,trade_info:any)=> {
+const sendPreTradeSingleEmailToClient = async (organization_id: any, trade_info: any) => {
 
-    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id)
+    const organizations_config = await organizationConfigModel.fetchOrganizationConfig(organization_id);
+
+    if (!organizations_config || organizations_config.length === 0) {
+        console.error("Organization config not found");
+        return false;
+    }
 
     const mailOptions = {
         from: organizations_config[0].from_email,
         to: [trade_info.client_email],
-        subject: organizations_config[0].email_subject+" "+trade_info.client_code,
+        subject: organizations_config[0].email_subject + " " + trade_info.client_code,
         html: trade_info.email_sample,
     };
 
-    const email_response = await emailService.sendOrganizationWiseEmail(organization_id,mailOptions);
+    // Add to queue instead of sending directly
+    emailQueue.add({
+        organization_id,
+        mailOptions,
+        client: {
+            email: trade_info.client_email,
+            pre_proof_id: trade_info.pre_trade_proof_id
+        },
+        retryCount: 0
+    });
 
-    if(email_response) {
-        await tradeProofModel.update_pre_trade_proofs({is_email_sent:1,email_response:JSON.stringify(email_response)},trade_info.pre_trade_proof_id)
-    } else {
-        console.error("Email send to Failed..",trade_info.email,"Error --->",email_response);
-    }
     return true;
-}
+};
+
+// ✅ NEW: Get email queue status
+const getEmailQueueStatus = () => {
+    return emailQueue.getStatus();
+};
 
 export default {
-    sendPreTradeEmailToClientOrganizationWise: sendPreTradeEmailToClientOrganizationWise,
-    readPreTradeEmailToClientOrganizationWise: readPreTradeEmailToClientOrganizationWise,
-    generatePreTradePdfFileClientWise: generatePreTradePdfFileClientWise,
-    generatePreTradePdfSampleFile: generatePreTradePdfSampleFile,
-    generatePreTradeEmailPdfClientWise:generatePreTradeEmailPdfClientWise,
-    generateSampleEmailPreTradeClientWise:generateSampleEmailPreTradeClientWise,
-    generateSampleEmailBodyPreTradeClientWise:generateSampleEmailBodyPreTradeClientWise,
-    sendPreTradeSingleEmailToClient:sendPreTradeSingleEmailToClient
+    sendPreTradeEmailToClientOrganizationWise,
+    readPreTradeEmailToClientOrganizationWise,
+    generatePreTradePdfFileClientWise,
+    generatePreTradePdfSampleFile,
+    generatePreTradeEmailPdfClientWise,
+    generateSampleEmailPreTradeClientWise,
+    generateSampleEmailBodyPreTradeClientWise,
+    sendPreTradeSingleEmailToClient,
+    getEmailQueueStatus  // ✅ NEW: Export queue status function
 };

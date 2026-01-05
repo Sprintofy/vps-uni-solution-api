@@ -413,70 +413,212 @@ const check_validation_pre_trade_client = async (req: any, client: any) => {
   }
 };
 
+// const save_bulk_trades_by_client = async (req: any, client: any) => {
+//   try {
+//     const client_info = await check_validation_pre_trade_client(req, client);
+
+//     if (client_info.unique_trade_info.length) {
+//       const email_sample =
+//         await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(
+//           client_info.organization_id || 1,
+//           client_info
+//         );
+
+//       // pdf creation pre-trade
+//       const pdf_sample =
+//         await emailNotificationServiceService.generatePreTradePdfSampleFile(
+//           client_info.organization_id || 1,
+//           client_info
+//         );
+
+//       // Save pre-trade proofs and get the proof ID
+//       const emailProof = await save_pre_trade_proofs(req, {
+//         pdf_sample: pdf_sample,
+//         email_sample: email_sample,
+//         client_id: client_info.client_id,
+//         client_code: client_info.client_code,
+//       });
+
+//       const preProofId = emailProof.insertId;
+
+//       client_info.pre_proof_id = preProofId;
+//       req.body.pre_proof_id = preProofId;
+
+//       const saveTradePromises = client_info.unique_trade_info.map(
+//         (trade: any) => {
+//           trade.pre_proof_id = preProofId;
+//           return save_pre_trade(req, trade);
+//         }
+//       );
+
+//       await Promise.all(saveTradePromises);
+
+//       emailNotificationServiceService.generatePreTradePdfFileClientWise(
+//         client_info.organization_id || 1,
+//         client_info  
+//       );
+
+//       emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(
+//         client_info.organization_id || 1,
+//         client_info
+//       );
+//     }
+//     return true;
+//   } catch (error) {
+//     console.error("Error occurred in save_bulk_trades_by_client  :", error);
+//     throw new Error("Error occurred in save client pre trade information");
+//   }
+// };
+
 const save_bulk_trades_by_client = async (req: any, client: any) => {
   try {
     const client_info = await check_validation_pre_trade_client(req, client);
 
-    if (client_info.unique_trade_info.length) {
-      const email_sample =
-        await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(
-          client_info.organization_id || 1,
-          client_info
-        );
+    // ✅ ADD: Validation check
+    if (!client_info.unique_trade_info || client_info.unique_trade_info.length === 0) {
+      console.log(`No unique trades for client: ${client_info.client_code}, skipping...`);
+      return true;
+    }
 
-      // pdf creation pre-trade
-      const pdf_sample =
-        await emailNotificationServiceService.generatePreTradePdfSampleFile(
-          client_info.organization_id || 1,
-          client_info
-        );
-
-      // Save pre-trade proofs and get the proof ID
-      const emailProof = await save_pre_trade_proofs(req, {
-        pdf_sample: pdf_sample,
-        email_sample: email_sample,
-        client_id: client_info.client_id,
-        client_code: client_info.client_code,
-      });
-
-      const preProofId = emailProof.insertId;
-
-      client_info.pre_proof_id = preProofId;
-      req.body.pre_proof_id = preProofId;
-
-      const saveTradePromises = client_info.unique_trade_info.map(
-        (trade: any) => {
-          trade.pre_proof_id = preProofId;
-          return save_pre_trade(req, trade);
-        }
-      );
-
-      await Promise.all(saveTradePromises);
-
-      emailNotificationServiceService.generatePreTradePdfFileClientWise(
-        client_info.organization_id || 1,
-        req.body
-      );
-
-      emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(
+    const email_sample =
+      await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(
         client_info.organization_id || 1,
         client_info
       );
-    }
+
+    // pdf creation pre-trade
+    const pdf_sample =
+      await emailNotificationServiceService.generatePreTradePdfSampleFile(
+        client_info.organization_id || 1,
+        client_info
+      );
+
+    // Save pre-trade proofs and get the proof ID
+    const emailProof = await save_pre_trade_proofs(req, {
+      pdf_sample: pdf_sample,
+      email_sample: email_sample,
+      client_id: client_info.client_id,
+      client_code: client_info.client_code,
+    });
+
+    const preProofId = emailProof.insertId;
+
+    client_info.pre_proof_id = preProofId;
+
+    const saveTradePromises = client_info.unique_trade_info.map(
+      (trade: any) => {
+        trade.pre_proof_id = preProofId;
+        return save_pre_trade(req, trade);
+      }
+    );
+
+    await Promise.all(saveTradePromises);
+
+    // ✅ FIX: Pass client_info instead of req.body
+    emailNotificationServiceService.generatePreTradePdfFileClientWise(
+      client_info.organization_id || 1,
+      client_info  // ✅ FIXED - was req.body before
+    );
+
+    emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(
+      client_info.organization_id || 1,
+      client_info
+    );
+
     return true;
   } catch (error) {
-    console.error("Error occurred in save_bulk_trades_by_client  :", error);
+    console.error("Error occurred in save_bulk_trades_by_client:", error);
     throw new Error("Error occurred in save client pre trade information");
   }
 };
 
+// const save_trades_by_client = async (req: any) => {
+//   try {
+//     const client_info = (await clientModel.fetch_client_info_by_id(
+//       req.body.client_id
+//     )) as any;
+
+//     if (!client_info) throw new Error("Client info not found");
+
+//     req.body.client_name = client_info[0].client_name;
+//     req.body.email = client_info[0].email;
+//     req.body.client_code = client_info[0].client_code;
+
+//     // Save pre-trade info and update trade objects with pre_trade_info_id
+//     const preTradeInfoPromises = req.body.unique_trade_info.map(
+//       async (trade: any) => {
+//         const results = await save_pre_trade_info(req, trade);
+//         return { ...trade, pre_trade_info_id: results.insertId };
+//       }
+//     );
+
+//     const updatedTrades = await Promise.all(preTradeInfoPromises);
+
+//     // send email to client pre trade
+//     // req.body.email_sample_url = await emailNotificationServiceService.generateSampleEmailPreTradeClientWise(1,req.body)
+
+//     req.body.email_sample =
+//       await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(
+//         1,
+//         req.body
+//       );
+
+//     // pdf creation pre trade sample
+//     req.body.pdf_sample =
+//       await emailNotificationServiceService.generatePreTradePdfSampleFile(
+//         1,
+//         req.body
+//       );
+
+//     // Save pre-trade proofs and get the proof ID
+//     const emailProof = await save_pre_trade_proofs(req, req.body);
+
+//     const preProofId = emailProof.insertId;
+
+//     client_info.pre_proof_id = preProofId;
+
+//     req.body.pre_proof_id = preProofId;
+
+//     // Save updated trades with pre_proof_id
+//     const saveTradePromises = updatedTrades.map((trade: any) => {
+//       trade.pre_proof_id = preProofId;
+//       return save_pre_trade(req, trade);
+//     });
+
+//     await Promise.all(saveTradePromises);
+
+//     emailNotificationServiceService.generatePreTradePdfFileClientWise(
+//       client_info.organization_id || 1,
+//       client_info  
+//     );
+
+//     // send email to client pre-trade
+//     emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(
+//       client_info.organization_id || 1,
+//       client_info
+//     );
+
+//     // req.body.is_email_sent = 1;
+//     // req.body.email_response = JSON.stringify(email_response);
+
+//     return true;
+//   } catch (error) {
+//     console.error("Error processing bulk clients:", error);
+//     throw new Error("Error processing bulk client information");
+//   }
+// };
 const save_trades_by_client = async (req: any) => {
   try {
     const client_info = (await clientModel.fetch_client_info_by_id(
       req.body.client_id
     )) as any;
 
-    if (!client_info) throw new Error("Client info not found");
+    if (!client_info || !client_info.length) throw new Error("Client info not found");
+
+    // ✅ ADD: Validation for unique_trade_info
+    if (!req.body.unique_trade_info || !Array.isArray(req.body.unique_trade_info)) {
+      throw new Error("unique_trade_info is required and must be an array");
+    }
 
     req.body.client_name = client_info[0].client_name;
     req.body.email = client_info[0].email;
@@ -492,16 +634,12 @@ const save_trades_by_client = async (req: any) => {
 
     const updatedTrades = await Promise.all(preTradeInfoPromises);
 
-    // send email to client pre trade
-    // req.body.email_sample_url = await emailNotificationServiceService.generateSampleEmailPreTradeClientWise(1,req.body)
-
     req.body.email_sample =
       await emailNotificationServiceService.generateSampleEmailBodyPreTradeClientWise(
         1,
         req.body
       );
 
-    // pdf creation pre trade sample
     req.body.pdf_sample =
       await emailNotificationServiceService.generatePreTradePdfSampleFile(
         1,
@@ -513,8 +651,6 @@ const save_trades_by_client = async (req: any) => {
 
     const preProofId = emailProof.insertId;
 
-    client_info.pre_proof_id = preProofId;
-
     req.body.pre_proof_id = preProofId;
 
     // Save updated trades with pre_proof_id
@@ -525,19 +661,33 @@ const save_trades_by_client = async (req: any) => {
 
     await Promise.all(saveTradePromises);
 
+    // ✅ FIX: Create proper data object for PDF generation
+    const pdfData = {
+      ...req.body,
+      client_id: client_info[0].client_id,
+      client_name: client_info[0].client_name,
+      client_code: client_info[0].client_code,
+      email: client_info[0].email,
+      pre_proof_id: preProofId,
+      unique_trade_info: req.body.unique_trade_info
+    };
+
     emailNotificationServiceService.generatePreTradePdfFileClientWise(
-      client_info.organization_id || 1,
-      req.body
+      client_info[0].organization_id || 1,
+      pdfData  // ✅ FIXED - proper data object
     );
 
-    // send email to client pre-trade
+    // ✅ FIX: Create proper client object for email
+    const emailClientData = {
+      ...client_info[0],
+      pre_proof_id: preProofId,
+      unique_trade_info: req.body.unique_trade_info
+    };
+
     emailNotificationServiceService.sendPreTradeEmailToClientOrganizationWise(
-      client_info.organization_id || 1,
-      client_info
+      client_info[0].organization_id || 1,
+      emailClientData  // ✅ FIXED - proper client object
     );
-
-    // req.body.is_email_sent = 1;
-    // req.body.email_response = JSON.stringify(email_response);
 
     return true;
   } catch (error) {
@@ -545,7 +695,6 @@ const save_trades_by_client = async (req: any) => {
     throw new Error("Error processing bulk client information");
   }
 };
-
 const fetch_trades_details_by_client_id = async (req: any) => {
   try {
     let response = {} as any;
