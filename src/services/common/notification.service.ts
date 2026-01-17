@@ -11,6 +11,17 @@ import organizationConfigModel from '../../models/organizationConfig.model'
 import fileService from "./file.service";
 const phantomPath = path.resolve(__dirname, '../../../../node_modules/phantomjs-prebuilt/bin/phantomjs');
 
+//// ADD THIS HELPER FUNCTION AFTER IMPORTS ////
+const safeDeleteFile = (filePath: string): void => {
+    try {
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+    } catch (err: any) {
+        console.warn(`Could not delete file ${filePath}:`, err.message);
+    }
+};
+
 // ============== EMAIL QUEUE SYSTEM ==============
 interface EmailTask {
     organization_id: any;
@@ -355,7 +366,7 @@ const generateSampleEmailPreTradeClientWise = async (organization_id: any, clien
 
     const aws_s3_url = await fileService.uploadSampleEmailPdfFileToS3Bucket(organization_id, { file_name, file_path });
 
-    fs.unlinkSync(file_path);
+    safeDeleteFile;
     return aws_s3_url;
 };
 
@@ -599,7 +610,7 @@ const generatePreTradePdfFileClientWise = async (organization_id: any, data: any
             console.error("Generate Pdf URL Failed --->", data.client_code);
         }
         
-        fs.unlinkSync(file_path);
+        safeDeleteFile;
         return true;
 
     } catch (error) {
@@ -754,7 +765,7 @@ const generatePreTradeEmailPdfClientWise_old = async (organization_id: any, data
 
     const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id, { file_name, file_path });
 
-    fs.unlinkSync(file_path);
+    safeDeleteFile;
     return aws_s3_url;
 };
 
@@ -792,7 +803,7 @@ const generatePreTradeEmailPdfClientWise = async (organization_id: any, data: an
 
         const aws_s3_url = await fileService.uploadEmailFileToS3Bucket(organization_id, { file_name, file_path });
 
-        fs.unlinkSync(file_path);
+        safeDeleteFile;
 
         return aws_s3_url;
     } catch (error) {
