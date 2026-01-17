@@ -366,7 +366,7 @@ const generateSampleEmailPreTradeClientWise = async (organization_id: any, clien
 
     const aws_s3_url = await fileService.uploadSampleEmailPdfFileToS3Bucket(organization_id, { file_name, file_path });
 
-    safeDeleteFile;
+    safeDeleteFile(file_path);
     return aws_s3_url;
 };
 
@@ -610,7 +610,7 @@ const generatePreTradePdfFileClientWise = async (organization_id: any, data: any
             console.error("Generate Pdf URL Failed --->", data.client_code);
         }
         
-        safeDeleteFile;
+        safeDeleteFile(file_path);
         return true;
 
     } catch (error) {
@@ -765,7 +765,7 @@ const generatePreTradeEmailPdfClientWise_old = async (organization_id: any, data
 
     const aws_s3_url = await fileService.uploadPdfFileToS3Bucket(organization_id, { file_name, file_path });
 
-    safeDeleteFile;
+    safeDeleteFile(file_path);
     return aws_s3_url;
 };
 
@@ -803,7 +803,7 @@ const generatePreTradeEmailPdfClientWise = async (organization_id: any, data: an
 
         const aws_s3_url = await fileService.uploadEmailFileToS3Bucket(organization_id, { file_name, file_path });
 
-        safeDeleteFile;
+        safeDeleteFile(file_path);
 
         return aws_s3_url;
     } catch (error) {
