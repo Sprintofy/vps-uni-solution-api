@@ -26,8 +26,23 @@ class EmailQueue {
     private readonly MAX_RETRIES = 3;
     private readonly RETRY_DELAY = 60000; // 1 minute retry delay for failed emails
 
+     private queuedProofIds: Set<number> = new Set();
+
     // Add email to queue
-    add(task: EmailTask) {
+    // add(task: EmailTask) {
+    //     this.queue.push(task);
+    //     this.processQueue();
+    // }
+     add(task: EmailTask) {
+        const proofId = task.client?.pre_proof_id;
+        if (proofId && this.queuedProofIds.has(proofId)) {
+            console.log(`⚠️ Email for proof_id ${proofId} already in queue, skipping duplicate`);
+            return;
+        }
+        if (proofId) {
+            this.queuedProofIds.add(proofId);
+        }
+        
         this.queue.push(task);
         this.processQueue();
     }
@@ -58,13 +73,23 @@ class EmailQueue {
                 task.mailOptions
             );
 
+            // if (email_response) {
+            //     await tradeProofModel.update_pre_trade_proofs(
+            //         { is_email_sent: 1, email_response: JSON.stringify(email_response) },
+            //         task.client.pre_proof_id
+            //     );
+            //     console.log(`✅ Email sent successfully to: ${task.client.email}`);
+            // } 
             if (email_response) {
                 await tradeProofModel.update_pre_trade_proofs(
                     { is_email_sent: 1, email_response: JSON.stringify(email_response) },
                     task.client.pre_proof_id
                 );
                 console.log(`✅ Email sent successfully to: ${task.client.email}`);
-            } else {
+                
+                this.queuedProofIds.delete(task.client.pre_proof_id);
+            }
+            else {
                 throw new Error('Email response was falsy');
             }
         } catch (error: any) {
@@ -76,6 +101,8 @@ class EmailQueue {
                 
                 // Add back to queue with incremented retry count after delay
                 setTimeout(() => {
+                    this.queuedProofIds.delete(task.client.pre_proof_id);
+
                     this.add({
                         ...task,
                         retryCount: task.retryCount + 1
@@ -91,6 +118,8 @@ class EmailQueue {
                     task.client.pre_proof_id
                 );
                 console.error(`❌ Email permanently failed for: ${task.client.email}`);
+                this.queuedProofIds.delete(task.client.pre_proof_id);
+
             }
         }
     }
@@ -125,8 +154,8 @@ const sendPreTradeEmailToClientOrganizationWise = async (organization_id: any, c
     console.log("sendPreTradeEmailToClientOrganizationWise", organization_id);
 
     // Validate client data
-    if (!client || !client.unique_trade_info) {
-        console.error("Invalid client data - missing unique_trade_info for client:", client?.client_code);
+    if (!client || !client.trade_info) {
+        console.error("Invalid client data - missing trade_info for client:", client?.client_code);
         return false;
     }
 
@@ -181,7 +210,7 @@ const sendPreTradeEmailToClientOrganizationWise = async (organization_id: any, c
           </tr>
         </thead>
         <tbody>
-          ${safeMap(client.unique_trade_info, (trade: any) => `
+          ${safeMap(client.trade_info, (trade: any) => `
           <tr>
             <td>${trade.exchange_code || ''}</td>
             <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
@@ -227,8 +256,8 @@ const generateSampleEmailPreTradeClientWise = async (organization_id: any, clien
     console.log("generateSampleEmailPreTradeClientWise", organization_id);
 
     // Validate client data
-    if (!client || !client.unique_trade_info) {
-        console.error("Invalid client data - missing unique_trade_info");
+    if (!client || !client.trade_info) {
+        console.error("Invalid client data - missing trade_info");
         return null;
     }
 
@@ -283,7 +312,7 @@ const generateSampleEmailPreTradeClientWise = async (organization_id: any, clien
           </tr>
         </thead>
         <tbody>
-          ${safeMap(client.unique_trade_info, (trade: any) => `
+          ${safeMap(client.trade_info, (trade: any) => `
           <tr>
             <td>${trade.exchange_code || ''}</td>
             <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
@@ -390,7 +419,7 @@ const generateSampleEmailBodyPreTradeClientWise = async (organization_id: any, c
           </tr>
         </thead>
         <tbody>
-          ${safeMap(client.unique_trade_info, (trade: any) => `
+          ${safeMap(client.trade_info, (trade: any) => `
           <tr>
             <td>${trade.exchange_code || ''}</td>
             <td>${/s/i.test(trade.buy_or_sell) ? 'Sell' : 'Buy'}</td>
@@ -424,8 +453,8 @@ const generatePreTradePdfFileClientWise = async (organization_id: any, data: any
         return false;
     }
 
-    if (!data.unique_trade_info || !Array.isArray(data.unique_trade_info)) {
-        console.error("generatePreTradePdfFileClientWise: unique_trade_info is undefined or not an array for client:", data?.client_code);
+    if (!data.trade_info || !Array.isArray(data.trade_info)) {
+        console.error("generatePreTradePdfFileClientWise: trade_info is undefined or not an array for client:", data?.client_code);
         return false;
     }
 
@@ -496,7 +525,7 @@ const generatePreTradePdfFileClientWise = async (organization_id: any, data: any
                 </tr>
             </thead>
             <tbody>
-                ${safeMap(data.unique_trade_info, (trade: any, index: number) => `
+                ${safeMap(data.trade_info, (trade: any, index: number) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${trade.script_name || ''}</td>
@@ -582,7 +611,7 @@ const generatePreTradePdfFileClientWise = async (organization_id: any, data: any
 const generatePreTradePdfSampleFile = async (organization_id: any, data: any) => {
 
     // Validate data
-    if (!data || !data.unique_trade_info) {
+    if (!data || !data.trade_info) {
         console.error("generatePreTradePdfSampleFile: Invalid data");
         return null;
     }
@@ -654,7 +683,7 @@ const generatePreTradePdfSampleFile = async (organization_id: any, data: any) =>
                 </tr>
             </thead>
             <tbody>
-                ${safeMap(data.unique_trade_info, (trade: any, index: number) => `
+                ${safeMap(data.trade_info, (trade: any, index: number) => `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${trade.script_name || ''}</td>

@@ -472,11 +472,17 @@ const check_validation_pre_trade_client = async (req: any, client: any) => {
 
 const save_bulk_trades_by_client = async (req: any, client: any) => {
   try {
-    const client_info = await check_validation_pre_trade_client(req, client);
+    // const client_info = await check_validation_pre_trade_client(req, client);
+    const client_info = client; // Use client directly, no unique check
 
     // ✅ ADD: Validation check
-    if (!client_info.unique_trade_info || client_info.unique_trade_info.length === 0) {
-      console.log(`No unique trades for client: ${client_info.client_code}, skipping...`);
+    // if (!client_info.unique_trade_info || client_info.unique_trade_info.length === 0) {
+    //   console.log(`No unique trades for client: ${client_info.client_code}, skipping...`);
+    //   return true;
+    // }
+
+    if (!client_info.trade_info || client_info.trade_info.length === 0) {
+      console.log(`No trades for client: ${client_info.client_code}, skipping...`);
       return true;
     }
 
@@ -505,7 +511,13 @@ const save_bulk_trades_by_client = async (req: any, client: any) => {
 
     client_info.pre_proof_id = preProofId;
 
-    const saveTradePromises = client_info.unique_trade_info.map(
+    // const saveTradePromises = client_info.unique_trade_info.map(
+    //   (trade: any) => {
+    //     trade.pre_proof_id = preProofId;
+    //     return save_pre_trade(req, trade);
+    //   }
+    // );
+    const saveTradePromises = client_info.trade_info.map(
       (trade: any) => {
         trade.pre_proof_id = preProofId;
         return save_pre_trade(req, trade);
