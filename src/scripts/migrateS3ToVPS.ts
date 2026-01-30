@@ -613,18 +613,18 @@ const CONFIG = {
 
   // VPS CDN
   vps: {
-    baseUrl: process.env.FILE_STORAGE_BASE_URL || "",
-    publicUrl: process.env.FILE_STORAGE_PUBLIC_URL || "",
-    apiKey: process.env.FILE_STORAGE_API_KEY || "",
+    baseUrl: process.env.FILE_STORAGE_BASE_URL || "https://cdn.digimatrixpro.com",
+    publicUrl: process.env.FILE_STORAGE_PUBLIC_URL || "https://cdn.digimatrixpro.com/public",
+    apiKey: process.env.FILE_STORAGE_API_KEY || "fss_970ca7cb162cfe13b4514bb26d4f971b6db19018fd9c3e977f3236946b3fc20c",
     bucketName: process.env.FILE_STORAGE_DEFAULT_BUCKET || "organization-files",
   },
 
   // Database
   database: {
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "file_storage_db",
+    host: "162.55.48.116",
+    user: "greencloud",
+    password:"Chetan@Allied20!",
+    database: "file_storage_db",
     port: parseInt(process.env.DB_PORT || "3306"),
   },
 
