@@ -1344,35 +1344,46 @@ async function getDatabase(): Promise<mysql.Connection> {
 }
 
 async function checkExistingFiles(fileNames: string[]): Promise<Set<string>> {
+  const existing = new Set<string>();
+  
+  
   try {
     const db = await getDatabase();
-    const existing = new Set<string>();
+    
+    console.log(chalk.gray(`   Checking ${fileNames.length} files in database...`));
     
     for (let i = 0; i < fileNames.length; i += CONFIG.migration.chunkSize) {
       const chunk = fileNames.slice(i, i + CONFIG.migration.chunkSize);
       const placeholders = chunk.map(() => '?').join(',');
       
-      const [rows] = await db.execute(
-        `SELECT file_name, unique_file_name 
-         FROM files 
-         WHERE (file_name IN (${placeholders}) OR unique_file_name IN (${placeholders}))
-         AND status = 'active'`,
-        [...chunk, ...chunk]
-      );
+      // Using correct column names from schema: original_name, stored_name
+      const query = `
+        SELECT original_name, stored_name 
+        FROM files 
+        WHERE (original_name IN (${placeholders}) OR stored_name IN (${placeholders}))
+        AND status = 'active'
+      `;
+      
+      const [rows] = await db.execute(query, [...chunk, ...chunk]);
       
       (rows as any[]).forEach(row => {
-        existing.add(row.file_name);
-        existing.add(row.unique_file_name);
+        if (row.original_name) existing.add(row.original_name);
+        if (row.stored_name) existing.add(row.stored_name);
       });
+      
+      // Show progress for large checks
+      if (i > 0 && i % 1000 === 0) {
+        console.log(chalk.gray(`   Checked ${i}/${fileNames.length} files...`));
+      }
     }
     
     return existing;
-  } catch (error) {
-    console.error('Database check failed:', error);
-    return new Set();
+  } catch (error: any) {
+    console.log(chalk.yellow(`   ⚠️ Database check failed: ${error.message}`));
+    console.log(chalk.yellow(`   Continuing without duplicate check...`));
+    return existing;
   }
 }
-
 // ============================================
 // UTILITIES
 // ============================================
