@@ -49,9 +49,7 @@ class FileStorageService {
     if (path.startsWith("proofs/")) {
       // proofs/organization_1/pdfs/file.pdf -> organization_1/emails/file.pdf
       path = path
-        .replace("proofs/", "")
-        .replace("/pdfs/", "/emails/")
-        .replace("/sample_email_pdfs/", "/emails/");
+        .replace("proofs/", "");
     }
 
     // Remove tenant/bucket prefixes if they exist

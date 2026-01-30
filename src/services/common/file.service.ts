@@ -176,7 +176,7 @@ const uploadPdfFileToS3Bucket = async (organization_id: any, body: any) => {
     console.log("uploadPdfFileToS3Bucket", organization_id);
 
     // Use consistent folder structure
-    const s3FolderPath = `organization_${organization_id}/emails`;
+    const s3FolderPath = `organization_${organization_id}/pdfs`;
 
     const result = await fileStorageService.uploadLocalFile(
       body.file_path,
@@ -234,7 +234,7 @@ const uploadSampleEmailPdfFileToS3Bucket = async (
   try {
     console.log("uploadSampleEmailPdfFileToS3Bucket", organization_id);
 
-    const s3FolderPath = `organization_${organization_id}/emails`;
+    const s3FolderPath = `organization_${organization_id}/sample_email_pdfs`;
 
     const result = await fileStorageService.uploadLocalFile(
       body.file_path,
