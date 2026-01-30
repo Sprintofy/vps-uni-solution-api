@@ -905,11 +905,11 @@ async function extractZipFile(zipPath: string): Promise<ExtractedFile[]> {
   console.log(chalk.blue(`      📂 Extracting to temp directory...`));
   
   try {
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       fs.createReadStream(zipPath)
         .pipe(unzipper.Extract({ path: extractDir }))
-        .on('close', resolve)
-        .on('error', reject);
+        .on('close', () => resolve())
+        .on('error', (err) => reject(err));
     });
     
     // Recursively find all files (including in nested zips)
@@ -1012,11 +1012,11 @@ async function downloadFromS3WithRateLimit(
     
     const fileStream = fs.createWriteStream(localPath);
     
-    await new Promise((resolve, reject) => {
-      s3Stream.pipe(fileStream);
-      fileStream.on('finish', resolve);
-      fileStream.on('error', reject);
-      s3Stream.on('error', reject);
+    await new Promise<void>((resolve, reject) => {
+        s3Stream.pipe(fileStream);
+        fileStream.on('finish', () => resolve());
+        fileStream.on('error', (err) => reject(err));
+        s3Stream.on('error', (err) => reject(err));
     });
     
     const duration = Date.now() - startTime;
