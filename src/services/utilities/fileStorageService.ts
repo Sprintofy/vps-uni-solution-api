@@ -156,6 +156,7 @@ class FileStorageService {
       formData.append("file", fileStream, fileName);
       formData.append("folder", folderPath);
       formData.append("isPublic", "true");
+      formData.append("preserveFileName", "true"); // ✅ ADD THIS LINE
 
       const response = await this.apiClient.post(
         `/api/v1/files/upload/${this.defaultBucket}`,
