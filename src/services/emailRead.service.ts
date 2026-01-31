@@ -1,11 +1,12 @@
-'use strict';
+// /Users/digitalflakeadmin/Desktop/vps-uni-solution-api/src/services/emailRead.service.ts
+"use strict";
 import path from "path";
-import { google } from 'googleapis';
+import { google } from "googleapis";
 import fs from "fs";
 // import Imap from "imap-simple";
 // import { simpleParser } from 'mailparser';
-import puppeteer from 'puppeteer-core';
-import emailService from './utilities/email.service';
+import puppeteer from "puppeteer-core";
+import emailService from "./utilities/email.service";
 import tradeProofsModel from "../models/tradeProofs.model";
 import moment from "moment";
 import fileService from "./common/file.service";
@@ -208,137 +209,165 @@ import preTradeModel from "../models/preTrade.model";
 // google api
 
 const read_email = async (req: any) => {
-    try {
+  try {
+    // Replace with the required subject
+    const subject = "Pre Trade Confirmation";
 
-        // Replace with the required subject
-        const subject = "Pre Trade Confirmation";
+    let date = moment().format("YYYY-MM-DD"); // Get today's date
+    let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
+    let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+    let query = `subject:"${subject}" after:${startTime}`;
 
-        let date = moment().format('YYYY-MM-DD');// Get today's date
-        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
-        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
-        let query= `subject:"${subject}" after:${startTime}`
+    if (
+      req.query.start_date &&
+      moment(req.query.start_date).format("YYYY-MM-DD") !=
+        moment().format("YYYY-MM-DD")
+    ) {
+      date = moment(req.query.start_date).format("YYYY-MM-DD"); // Format date
+      startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
+      endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
+      query = `subject:"${subject}" after:${startTime} before:${endTime}`;
+    }
+    const results = await tradeProofsModel.fetch_all_trade_proof_email_read(
+      1,
+      date,
+    );
 
-        if(req.query.start_date && (moment(req.query.start_date).format("YYYY-MM-DD") != moment().format("YYYY-MM-DD"))) {
-            date = moment(req.query.start_date).format('YYYY-MM-DD'); // Format date
-            startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix(); // 7:00 AM IST
-            endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm").unix(); // 11:00 PM IST
-            query= `subject:"${subject}" after:${startTime} before:${endTime}`
-        }
-        const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
+    if (!results.length) {
+      return true;
+    }
 
-        if(!results.length) {
-            return true;
-        }
+    const client_proof_info: Record<
+      string,
+      { client_code: string; client_email: string; pre_trade_proof_id: number }
+    > = {};
 
-        const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
-
-        results.forEach(({ client_email, client_code, pre_trade_proof_id }: { client_email: string; client_code: string; pre_trade_proof_id: number }) => {
-            const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
-            client_proof_info[emailKey] = { client_code, client_email: emailKey, pre_trade_proof_id };
-        });
-
-        // Authenticate client
-        const auth = await emailService.authenticateGoogleAuth(1);
-
-        const gmail: any = google.gmail({ version: "v1", auth });
-
-
-        //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
-        const beforeTime = moment("YYYY-MM-DD").unix();
-
-        const responses = await gmail.users.messages.list({
-            userId: "me",
-            q: query
-        });
-
-        if(!responses.data.resultSizeEstimate) {
-            console.log("No Message Found...!")
-            return true;
-        }
-
-                    // Group emails by threadId
-        const threads: { [key: string]: any[] } = {};
-
-        for (const msg of responses.data.messages) {
-            const email: any = await gmail.users.messages.get({
-                userId: "me",
-                id: msg.id,
-                format: "full",
-            });
-
-            // Get headers and message-id
-            const allHeaders = email.data.payload?.headers || [];
-            const messageIdHeader = allHeaders.find((header: any) =>
-                header.name.toLowerCase() === "message-id"
-            );
-
-            threads[msg.threadId] = threads[msg.threadId] || [];
-
-            const headers = Object.fromEntries(
-                allHeaders.map((header: any) => [header.name, header.value])
-            );
-
-            // Extract the body
-            let body = "";
-            const payload = email.data.payload;
-
-            if (payload.parts && payload.parts.length) {
-                // For multipart emails
-                for (const part of payload.parts) {
-                if (part.mimeType === "text/html" && part.body?.data) {
-                    body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                    break;
-                } else if (part.mimeType === "text/plain" && part.body?.data) {
-                    // Fallback to text/plain if html is not found
-                    body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                }
-                }
-            } else if (payload.body && payload.body.data) {
-                // For non-multipart emails (like email 2)
-                 const decodedBody = Buffer.from(payload.body.data, "base64").toString("utf-8");
-
-                 // Extract the content between <body> and </body>
-                    const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-                    body = match ? match[1] : decodedBody;
-            }
-
-           // console.log("body  --------",body);
-
-
-            threads[msg.threadId].push({
-                id: msg.id,
-                messageId: messageIdHeader,
-                headers,
-                body,
-            });
-            }
-
-        const extractEmailParts = (headerValue: string) => {
-            const match = headerValue.match(/(.*?)\s*<(.*)>/);
-            return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+    results.forEach(
+      ({
+        client_email,
+        client_code,
+        pre_trade_proof_id,
+      }: {
+        client_email: string;
+        client_code: string;
+        pre_trade_proof_id: number;
+      }) => {
+        const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
+        client_proof_info[emailKey] = {
+          client_code,
+          client_email: emailKey,
+          pre_trade_proof_id,
         };
+      },
+    );
 
-        const finalThread = {} as any
+    // Authenticate client
+    const auth = await emailService.authenticateGoogleAuth(1);
 
-        await Promise.all(
-            Object.entries(threads).map(async ([threadId, emails]) => {
-                finalThread[threadId] = {
-                    thread_id : threadId,
-                    emails: [] as any
-                } as any;
+    const gmail: any = google.gmail({ version: "v1", auth });
 
-                emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
-                if(emails.length > 1) {
-                    const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
-                    let emailPart2 = ' '
-                    if(!emailPart){
-                         emailPart2 = namePart
-                    }else{
-                        emailPart2 = emailPart
-                    }
+    //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
+    // const beforeTime = moment("YYYY-MM-DD").unix();
 
+    const responses = await gmail.users.messages.list({
+      userId: "me",
+      q: query,
+    });
 
-                    let htmlContent = `<!DOCTYPE html>
+    if (!responses.data.resultSizeEstimate) {
+      console.log("No Message Found...!");
+      return true;
+    }
+
+    // Group emails by threadId
+    const threads: { [key: string]: any[] } = {};
+
+    for (const msg of responses.data.messages) {
+      const email: any = await gmail.users.messages.get({
+        userId: "me",
+        id: msg.id,
+        format: "full",
+      });
+
+      // Get headers and message-id
+      const allHeaders = email.data.payload?.headers || [];
+      const messageIdHeader = allHeaders.find(
+        (header: any) => header.name.toLowerCase() === "message-id",
+      );
+
+      threads[msg.threadId] = threads[msg.threadId] || [];
+
+      const headers = Object.fromEntries(
+        allHeaders.map((header: any) => [header.name, header.value]),
+      );
+
+      // Extract the body
+      let body = "";
+      const payload = email.data.payload;
+
+      if (payload.parts && payload.parts.length) {
+        // For multipart emails
+        for (const part of payload.parts) {
+          if (part.mimeType === "text/html" && part.body?.data) {
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+            break;
+          } else if (part.mimeType === "text/plain" && part.body?.data) {
+            // Fallback to text/plain if html is not found
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+          }
+        }
+      } else if (payload.body && payload.body.data) {
+        // For non-multipart emails (like email 2)
+        const decodedBody = Buffer.from(payload.body.data, "base64").toString(
+          "utf-8",
+        );
+
+        // Extract the content between <body> and </body>
+        const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        body = match ? match[1] : decodedBody;
+      }
+
+      // console.log("body  --------",body);
+
+      threads[msg.threadId].push({
+        id: msg.id,
+        messageId: messageIdHeader,
+        headers,
+        body,
+      });
+    }
+
+    const extractEmailParts = (headerValue: string) => {
+      const match = headerValue.match(/(.*?)\s*<(.*)>/);
+      return match ? [match[1].trim(), match[2]] : [headerValue, ""];
+    };
+
+    const finalThread = {} as any;
+
+    await Promise.all(
+      Object.entries(threads).map(async ([threadId, emails]) => {
+        finalThread[threadId] = {
+          thread_id: threadId,
+          emails: [] as any,
+        } as any;
+
+        emails.sort(
+          (a: any, b: any) =>
+            new Date(a.headers.Date).getTime() -
+            new Date(b.headers.Date).getTime(),
+        );
+        if (emails.length > 1) {
+          const [namePart, emailPart] = extractEmailParts(
+            emails[0].headers.From,
+          );
+          let emailPart2 = " ";
+          if (!emailPart) {
+            emailPart2 = namePart;
+          } else {
+            emailPart2 = emailPart;
+          }
+
+          let htmlContent = `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -378,45 +407,61 @@ const read_email = async (req: any) => {
                         </tr>
                     </table>`;
 
-                    htmlContent += emails.map((email:any) => {
-                         //console.log("inner email",email)
-                        let [senderName, senderEmail] = extractEmailParts(email.headers.From);
-                        let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        //console.log("senderEmail email",senderEmail)
-                        //console.log("recipientEmail email",recipientEmail)
+          htmlContent += emails
+            .map((email: any) => {
+              //console.log("inner email",email)
+              let [senderName, senderEmail] = extractEmailParts(
+                email.headers.From,
+              );
+              let [recipientName, recipientEmail] = extractEmailParts(
+                email.headers.To,
+              );
+              //console.log("senderEmail email",senderEmail)
+              //console.log("recipientEmail email",recipientEmail)
 
-                        // replace Email with can
-                        if (senderEmail.toLowerCase().includes("canned")) {
-                            senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            // console.log("senderEmail",senderEmail)
+              // replace Email with can
+              if (senderEmail.toLowerCase().includes("canned")) {
+                senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@");
+                // console.log("senderEmail",senderEmail)
+              }
 
-                        }
+              let senderEmail2 = " ";
+              if (senderEmail) {
+                senderEmail2 = senderEmail;
+              } else {
+                senderEmail2 = senderName;
+              }
 
-                        let senderEmail2 = ' '
-                        if(senderEmail){
-                            senderEmail2 = senderEmail
-                        }else{
-                            senderEmail2 = senderName
-                        }
+              if (client_proof_info[senderEmail]) {
+                console.log(
+                  "client_proof_info",
+                  client_proof_info[senderEmail],
+                );
+                finalThread[threadId].client_code =
+                  client_proof_info[senderEmail].client_code;
+                finalThread[threadId].client_email =
+                  client_proof_info[senderEmail].client_email;
+                finalThread[threadId].pre_trade_proof_id =
+                  client_proof_info[senderEmail].pre_trade_proof_id;
+                finalThread[threadId].emails = emails;
+              }
 
-                        if(client_proof_info[senderEmail]) {
-                            console.log("client_proof_info",client_proof_info[senderEmail])
-                            finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
-                            finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
-                            finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
-                            finalThread[threadId].emails = emails
-                        }
-
-                        return `<hr>
+              return `<hr>
                 <table width="100%" cellpadding="0" cellspacing="0" class="message">
                     <tr>
                         <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
-                        <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
+                        <td align="right"><font size="-1">${formatDate(
+                          email.headers.Date,
+                        )}</font></td>
                     </tr>
                     <tr>
                         <td colspan="2" style="padding-bottom: 4px;">
                             <font size="-1" class="recipient">
-                                <div>To: ${recipientName} ${recipientEmail ? `&lt;${recipientEmail}&gt;` : ''}</div>
+                                <div>To: ${recipientName} ${
+                                  recipientEmail
+                                    ? `&lt;${recipientEmail}&gt;`
+                                    : ""
+                                }</div>
                             </font>
                         </td>
                     </tr>
@@ -434,186 +479,216 @@ const read_email = async (req: any) => {
                         </td>
                     </tr>
                 </table>`;
-                    }).join('');
-
-                    htmlContent += `</div></div></body></html>`;
-
-                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code });
-                    finalThread[threadId].email_url = email_url
-                    console.log(email_url)
-                    await tradeProofsModel.update_pre_trade_proofs({email_url:email_url},finalThread[threadId].pre_trade_proof_id);
-                }
-                return true;
             })
-        );
+            .join("");
 
+          htmlContent += `</div></div></body></html>`;
+
+          const email_url =
+            await notificationService.generatePreTradeEmailPdfClientWise(1, {
+              htmlContent,
+              client_code: finalThread[threadId].client_code,
+            });
+          finalThread[threadId].email_url = email_url;
+          console.log(email_url);
+          await tradeProofsModel.update_pre_trade_proofs(
+            { email_url: email_url },
+            finalThread[threadId].pre_trade_proof_id,
+          );
+        }
         return true;
-    } catch(error: any) {
-        console.log(error)
-        return  true;
-    }
+      }),
+    );
 
+    return true;
+  } catch (error: any) {
+    console.log(error);
+    return true;
+  }
 };
 
 const read_email_auto = async (req: any) => {
-    try {
-        const date = moment().format('YYYY-MM-DD'); // Get today's date
-        const subject = "Pre Trade Confirmation"; // Replace with the required subject
+  try {
+    const date = moment().format("YYYY-MM-DD"); // Get today's date
+    const subject = "Pre Trade Confirmation"; // Replace with the required subject
 
-        // todo fetch organizations
-        const results = await tradeProofsModel.fetch_all_trade_proof_email_read(1,date);
+    // todo fetch organizations
+    const results = await tradeProofsModel.fetch_all_trade_proof_email_read(
+      1,
+      date,
+    );
 
-        if(!results.length) {
-            return true;
-        }
+    if (!results.length) {
+      return true;
+    }
 
-        const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
+    const client_proof_info: Record<
+      string,
+      { client_code: string; client_email: string; pre_trade_proof_id: number }
+    > = {};
 
-        results.forEach(({ client_email, client_code, pre_trade_proof_id }: { client_email: string; client_code: string; pre_trade_proof_id: number }) => {
-            const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
-            client_proof_info[emailKey] = { client_code, client_email: emailKey, pre_trade_proof_id };
-        });
-
-        // Authenticate client
-        const auth = await emailService.authenticateGoogleAuth(1);
-
-        const gmail: any = google.gmail({ version: "v1", auth });
-        const today = moment().format("YYYY-MM-DD"); // Get today's date
-        //const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
-
-        const timeStamp = moment().subtract(15, "minutes").unix();  // Get the current Unix timestamp in seconds
-        const beforeTime = moment("YYYY-MM-DD").unix();
-
-        const responses = await gmail.users.messages.list({
-            userId: "me",
-            q: `subject:"${subject}" after:${timeStamp}`
-            //q: `subject:"${subject}" after:${timeStamp} before:${beforeTime}`
-        });
-
-        if(!responses.data.resultSizeEstimate) {
-            console.log("No Message Found...!")
-            return true;
-        }
-
-        // Group emails by threadId
-        const threads: { [key: string]: any[] } = {};
-
-        for (const msg of responses.data.messages) {
-            const email: any = await gmail.users.messages.get({
-                userId: "me",
-                id: msg.id,
-                format: "full",
-            });
-
-            // console.log("email --------");
-            // console.dir(email, { depth: null });
-
-            // Get headers and message-id
-            const allHeaders = email.data.payload?.headers || [];
-            const messageIdHeader = allHeaders.find((header: any) =>
-                header.name.toLowerCase() === "message-id"
-            );
-
-            threads[msg.threadId] = threads[msg.threadId] || [];
-
-            const headers = Object.fromEntries(
-                allHeaders.map((header: any) => [header.name, header.value])
-            );
-
-            // Extract the body
-            let body = "";
-            const payload = email.data.payload;
-
-            if (payload.parts && payload.parts.length) {
-                // For multipart emails
-                for (const part of payload.parts) {
-                    if (part.mimeType === "text/html" && part.body?.data) {
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                        break;
-                    } else if (part.mimeType === "text/plain" && part.body?.data) {
-                        // Fallback to text/plain if html is not found
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                    }
-                }
-            } else if (payload.body && payload.body.data) {
-                // For non-multipart emails (like email 2)
-                const decodedBody = Buffer.from(payload.body.data, "base64").toString("utf-8");
-
-                // Extract the content between <body> and </body>
-                const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-                body = match ? match[1] : decodedBody;
-            }
-
-            // console.log("body  --------",body);
-
-
-            threads[msg.threadId].push({
-                id: msg.id,
-                messageId: messageIdHeader,
-                headers,
-                body,
-            });
-        }
-
-
-        console.log("threads---------",threads)
-        const extractEmailParts = (headerValue: string) => {
-            const match = headerValue.match(/(.*?)\s*<(.*)>/);
-            return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+    results.forEach(
+      ({
+        client_email,
+        client_code,
+        pre_trade_proof_id,
+      }: {
+        client_email: string;
+        client_code: string;
+        pre_trade_proof_id: number;
+      }) => {
+        const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
+        client_proof_info[emailKey] = {
+          client_code,
+          client_email: emailKey,
+          pre_trade_proof_id,
         };
+      },
+    );
 
-        const finalThread = {} as any
+    // Authenticate client
+    const auth = await emailService.authenticateGoogleAuth(1);
 
+    const gmail: any = google.gmail({ version: "v1", auth });
+    const today = moment().format("YYYY-MM-DD"); // Get today's date
+    //const timeStamp = moment(`${today} 01:20`, "YYYY-MM-DD HH:mm").unix();
 
-        // await Promise.all(
-        //     Object.entries(threads).map(async ([threadId, emails]) => {
-        //         finalThread[threadId] = {
-        //             thread_id : threadId,
-        //             emails: [] as any
-        //         } as any;
-        //         // Sort emails by date (oldest to newest)
-        //         emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
-        //         if(emails.length) {
-        //             const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
-        //            emails.map((email:any) => {
-        //                 const [senderName, senderEmail] = extractEmailParts(email.headers.From);
-        //                 const [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-        //                if(client_proof_info[senderEmail]) {
-        //                    finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
-        //                    finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
-        //                    finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
-        //                    finalThread[threadId].emails = emails
-        //                }
-        //                // console.log("recipientName",recipientName,recipientEmail)
-        //                 return true
-        //             });
-        //         }
-        //         return true;
-        //     })
-        // );
+    const timeStamp = moment().subtract(15, "minutes").unix(); // Get the current Unix timestamp in seconds
+    // const beforeTime = moment("YYYY-MM-DD").unix();
 
-        // console.log("finalThread",finalThread)
+    const responses = await gmail.users.messages.list({
+      userId: "me",
+      q: `subject:"${subject}" after:${timeStamp}`,
+      //q: `subject:"${subject}" after:${timeStamp} before:${beforeTime}`
+    });
 
+    if (!responses.data.resultSizeEstimate) {
+      console.log("No Message Found...!");
+      return true;
+    }
 
-        await Promise.all(
-            Object.entries(threads).map(async ([threadId, emails]) => {
-                finalThread[threadId] = {
-                    thread_id : threadId,
-                    emails: [] as any
-                } as any;
+    // Group emails by threadId
+    const threads: { [key: string]: any[] } = {};
 
-                emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
-                if(emails.length > 1) {
-                    const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
-                    let emailPart2 = ' '
-                    if(!emailPart){
-                        emailPart2 = namePart
-                    }else{
-                        emailPart2 = emailPart
-                    }
+    for (const msg of responses.data.messages) {
+      const email: any = await gmail.users.messages.get({
+        userId: "me",
+        id: msg.id,
+        format: "full",
+      });
 
+      // console.log("email --------");
+      // console.dir(email, { depth: null });
 
-                    let htmlContent = `<!DOCTYPE html>
+      // Get headers and message-id
+      const allHeaders = email.data.payload?.headers || [];
+      const messageIdHeader = allHeaders.find(
+        (header: any) => header.name.toLowerCase() === "message-id",
+      );
+
+      threads[msg.threadId] = threads[msg.threadId] || [];
+
+      const headers = Object.fromEntries(
+        allHeaders.map((header: any) => [header.name, header.value]),
+      );
+
+      // Extract the body
+      let body = "";
+      const payload = email.data.payload;
+
+      if (payload.parts && payload.parts.length) {
+        // For multipart emails
+        for (const part of payload.parts) {
+          if (part.mimeType === "text/html" && part.body?.data) {
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+            break;
+          } else if (part.mimeType === "text/plain" && part.body?.data) {
+            // Fallback to text/plain if html is not found
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+          }
+        }
+      } else if (payload.body && payload.body.data) {
+        // For non-multipart emails (like email 2)
+        const decodedBody = Buffer.from(payload.body.data, "base64").toString(
+          "utf-8",
+        );
+
+        // Extract the content between <body> and </body>
+        const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        body = match ? match[1] : decodedBody;
+      }
+
+      // console.log("body  --------",body);
+
+      threads[msg.threadId].push({
+        id: msg.id,
+        messageId: messageIdHeader,
+        headers,
+        body,
+      });
+    }
+
+    console.log("threads---------", threads);
+    const extractEmailParts = (headerValue: string) => {
+      const match = headerValue.match(/(.*?)\s*<(.*)>/);
+      return match ? [match[1].trim(), match[2]] : [headerValue, ""];
+    };
+
+    const finalThread = {} as any;
+
+    // await Promise.all(
+    //     Object.entries(threads).map(async ([threadId, emails]) => {
+    //         finalThread[threadId] = {
+    //             thread_id : threadId,
+    //             emails: [] as any
+    //         } as any;
+    //         // Sort emails by date (oldest to newest)
+    //         emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
+    //         if(emails.length) {
+    //             const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
+    //            emails.map((email:any) => {
+    //                 const [senderName, senderEmail] = extractEmailParts(email.headers.From);
+    //                 const [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
+    //                if(client_proof_info[senderEmail]) {
+    //                    finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
+    //                    finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
+    //                    finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
+    //                    finalThread[threadId].emails = emails
+    //                }
+    //                // console.log("recipientName",recipientName,recipientEmail)
+    //                 return true
+    //             });
+    //         }
+    //         return true;
+    //     })
+    // );
+
+    // console.log("finalThread",finalThread)
+
+    await Promise.all(
+      Object.entries(threads).map(async ([threadId, emails]) => {
+        finalThread[threadId] = {
+          thread_id: threadId,
+          emails: [] as any,
+        } as any;
+
+        emails.sort(
+          (a: any, b: any) =>
+            new Date(a.headers.Date).getTime() -
+            new Date(b.headers.Date).getTime(),
+        );
+        if (emails.length > 1) {
+          const [namePart, emailPart] = extractEmailParts(
+            emails[0].headers.From,
+          );
+          let emailPart2 = " ";
+          if (!emailPart) {
+            emailPart2 = namePart;
+          } else {
+            emailPart2 = emailPart;
+          }
+
+          let htmlContent = `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -653,45 +728,61 @@ const read_email_auto = async (req: any) => {
                         </tr>
                     </table>`;
 
-                    htmlContent += emails.map((email:any) => {
-                        //console.log("inner email",email)
-                        let [senderName, senderEmail] = extractEmailParts(email.headers.From);
-                        let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        //console.log("senderEmail email",senderEmail)
-                        //console.log("recipientEmail email",recipientEmail)
+          htmlContent += emails
+            .map((email: any) => {
+              //console.log("inner email",email)
+              let [senderName, senderEmail] = extractEmailParts(
+                email.headers.From,
+              );
+              let [recipientName, recipientEmail] = extractEmailParts(
+                email.headers.To,
+              );
+              //console.log("senderEmail email",senderEmail)
+              //console.log("recipientEmail email",recipientEmail)
 
-                        // replace Email with can
-                        if (senderEmail.toLowerCase().includes("canned")) {
-                            senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            // console.log("senderEmail",senderEmail)
+              // replace Email with can
+              if (senderEmail.toLowerCase().includes("canned")) {
+                senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@");
+                // console.log("senderEmail",senderEmail)
+              }
 
-                        }
+              let senderEmail2 = " ";
+              if (senderEmail) {
+                senderEmail2 = senderEmail;
+              } else {
+                senderEmail2 = senderName;
+              }
 
-                        let senderEmail2 = ' '
-                        if(senderEmail){
-                            senderEmail2 = senderEmail
-                        }else{
-                            senderEmail2 = senderName
-                        }
+              if (client_proof_info[senderEmail]) {
+                console.log(
+                  "client_proof_info",
+                  client_proof_info[senderEmail],
+                );
+                finalThread[threadId].client_code =
+                  client_proof_info[senderEmail].client_code;
+                finalThread[threadId].client_email =
+                  client_proof_info[senderEmail].client_email;
+                finalThread[threadId].pre_trade_proof_id =
+                  client_proof_info[senderEmail].pre_trade_proof_id;
+                finalThread[threadId].emails = emails;
+              }
 
-                        if(client_proof_info[senderEmail]) {
-                            console.log("client_proof_info",client_proof_info[senderEmail])
-                            finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
-                            finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
-                            finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
-                            finalThread[threadId].emails = emails
-                        }
-
-                        return `<hr>
+              return `<hr>
                 <table width="100%" cellpadding="0" cellspacing="0" class="message">
                     <tr>
                         <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
-                        <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
+                        <td align="right"><font size="-1">${formatDate(
+                          email.headers.Date,
+                        )}</font></td>
                     </tr>
                     <tr>
                         <td colspan="2" style="padding-bottom: 4px;">
                             <font size="-1" class="recipient">
-                                <div>To: ${recipientName} ${recipientEmail ? `&lt;${recipientEmail}&gt;` : ''}</div>
+                                <div>To: ${recipientName} ${
+                                  recipientEmail
+                                    ? `&lt;${recipientEmail}&gt;`
+                                    : ""
+                                }</div>
                             </font>
                         </td>
                     </tr>
@@ -709,180 +800,236 @@ const read_email_auto = async (req: any) => {
                         </td>
                     </tr>
                 </table>`;
-                    }).join('');
-
-                    htmlContent += `</div></div></body></html>`;
-
-                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code });
-                    finalThread[threadId].email_url = email_url
-                    console.log(email_url)
-                    await tradeProofsModel.update_pre_trade_proofs({email_url:email_url},finalThread[threadId].pre_trade_proof_id);
-                }
-                return true;
             })
-        );
+            .join("");
 
-        // // Iterate and update each object in the data structure
-        // Object.values(finalThread).forEach(({ email_url, pre_trade_proof_id }) => {
-        //     console.log(`email_url: ${email_url}, pre_trade_proof_id: ${pre_trade_proof_id}`);
-        // });
+          htmlContent += `</div></div></body></html>`;
 
+          const email_url =
+            await notificationService.generatePreTradeEmailPdfClientWise(1, {
+              htmlContent,
+              client_code: finalThread[threadId].client_code,
+            });
+          finalThread[threadId].email_url = email_url;
+          console.log(email_url);
+          await tradeProofsModel.update_pre_trade_proofs(
+            { email_url: email_url },
+            finalThread[threadId].pre_trade_proof_id,
+          );
+        }
         return true;
-    } catch(error: any) {
-        console.log(error)
-        return  true;
-    }
+      }),
+    );
 
+    // // Iterate and update each object in the data structure
+    // Object.values(finalThread).forEach(({ email_url, pre_trade_proof_id }) => {
+    //     console.log(`email_url: ${email_url}, pre_trade_proof_id: ${pre_trade_proof_id}`);
+    // });
+
+    return true;
+  } catch (error: any) {
+    console.log(error);
+    return true;
+  }
 };
 
 const read_email_client_wise = async (req: any) => {
-    try {
+  try {
+    let date = moment().format("YYYY-MM-DD"); // Get today's date
+    const results =
+      await tradeProofsModel.fetch_all_trade_proof_email_read_client_wise(
+        1,
+        req.query.client_id,
+        date,
+      );
 
-        let date = moment().format('YYYY-MM-DD');// Get today's date
-        const results = await tradeProofsModel.fetch_all_trade_proof_email_read_client_wise(1,req.query.client_id,date);
+    if (!results.length) {
+      return true;
+    }
+    // Replace with the required subject
+    const subject = results[0].client_code;
 
-        if(!results.length) {
-            return true;
-        }
-        // Replace with the required subject
-        const subject = results[0].client_code;
+    // let startTime = moment(
+    //   `${date} 07:00`,
+    //   "YYYY-MM-DD HH:mm",
+    //   "Asia/Kolkata"
+    // ).unix(); // 7:00 AM IST
+    let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm").unix();
 
+    let endTime = moment(
+      `${date} 23:00`,
+      "YYYY-MM-DD HH:mm",
+      //   "Asia/Kolkata"
+    ).unix(); // 11:00 PM IST
 
-        let startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
-        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
+    if (
+      req.query.start_date &&
+      moment(req.query.start_date).format("YYYY-MM-DD") !=
+        moment().format("YYYY-MM-DD")
+    ) {
+      date = moment(req.query.start_date).format("YYYY-MM-DD"); // Format date
+      startTime = moment(
+        `${date} 07:00`,
+        "YYYY-MM-DD HH:mm",
+        "Asia/Kolkata",
+      ).unix(); // 7:00 AM IST
+      endTime = moment(
+        `${moment().format("YYYY-MM-DD")} 23:00`,
+        "YYYY-MM-DD HH:mm",
+        // "Asia/Kolkata"
+      ).unix(); // 11:00 PM IST
+    }
 
-        if(req.query.start_date && (moment(req.query.start_date).format("YYYY-MM-DD") != moment().format("YYYY-MM-DD"))) {
-            date = moment(req.query.start_date).format('YYYY-MM-DD'); // Format date
-            startTime = moment(`${date} 07:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
-            endTime = moment(`${moment().format('YYYY-MM-DD')} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
-        }
+    let query = `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`;
 
+    if (
+      req.query.start_date &&
+      moment(req.query.start_date).format("YYYY-MM-DD") !=
+        moment().format("YYYY-MM-DD")
+    ) {
+      query = `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`;
+    }
 
+    console.log("date", date);
+    console.log("startTime", startTime);
+    console.log("endTime", endTime);
+    console.log("query", query);
 
-        let query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
+    const client_proof_info: Record<
+      string,
+      { client_code: string; client_email: string; pre_trade_proof_id: number }
+    > = {};
 
-        if(req.query.start_date && (moment(req.query.start_date).format("YYYY-MM-DD") != moment().format("YYYY-MM-DD"))) {
-            query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
-        }
-
-        console.log("date",date)
-        console.log("startTime",startTime)
-        console.log("endTime",endTime)
-        console.log("query",query)
-
-        const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
-
-        results.forEach(({ client_email, client_code, pre_trade_proof_id }: { client_email: string; client_code: string; pre_trade_proof_id: number }) => {
-            const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
-            client_proof_info[emailKey] = { client_code, client_email: emailKey, pre_trade_proof_id };
-        });
-
-        // Authenticate client
-        const auth = await emailService.authenticateGoogleAuth(1);
-
-        const gmail: any = google.gmail({ version: "v1", auth });
-
-
-        //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
-        const beforeTime = moment("YYYY-MM-DD").unix();
-
-        const responses = await gmail.users.messages.list({
-            userId: "me",
-            q: query
-        });
-
-        console.log("responses.length",responses.data.resultSizeEstimate);
-
-        if(!responses.data.resultSizeEstimate) {
-            console.log("No Message Found...!")
-            return true;
-        }
-
-        // Group emails by threadId
-        const threads: { [key: string]: any[] } = {};
-
-        for (const msg of responses.data.messages) {
-            const email: any = await gmail.users.messages.get({
-                userId: "me",
-                id: msg.id,
-                format: "full",
-            });
-
-            // Get headers and message-id
-            const allHeaders = email.data.payload?.headers || [];
-            const messageIdHeader = allHeaders.find((header: any) =>
-                header.name.toLowerCase() === "message-id"
-            );
-
-            threads[msg.threadId] = threads[msg.threadId] || [];
-
-            const headers = Object.fromEntries(
-                allHeaders.map((header: any) => [header.name, header.value])
-            );
-
-            // Extract the body
-            let body = "";
-            const payload = email.data.payload;
-
-            if (payload.parts && payload.parts.length) {
-                // For multipart emails
-                for (const part of payload.parts) {
-                    if (part.mimeType === "text/html" && part.body?.data) {
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                        break;
-                    } else if (part.mimeType === "text/plain" && part.body?.data) {
-                        // Fallback to text/plain if html is not found
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                    }
-                }
-            } else if (payload.body && payload.body.data) {
-                // For non-multipart emails (like email 2)
-                const decodedBody = Buffer.from(payload.body.data, "base64").toString("utf-8");
-
-                // Extract the content between <body> and </body>
-                const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-                body = match ? match[1] : decodedBody;
-            }
-
-            // console.log("body  --------",body);
-
-
-            threads[msg.threadId].push({
-                id: msg.id,
-                messageId: messageIdHeader,
-                headers,
-                body,
-            });
-        }
-
-        console.log(threads);
-
-        const extractEmailParts = (headerValue: string) => {
-            const match = headerValue.match(/(.*?)\s*<(.*)>/);
-            return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+    results.forEach(
+      ({
+        client_email,
+        client_code,
+        pre_trade_proof_id,
+      }: {
+        client_email: string;
+        client_code: string;
+        pre_trade_proof_id: number;
+      }) => {
+        const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
+        client_proof_info[emailKey] = {
+          client_code,
+          client_email: emailKey,
+          pre_trade_proof_id,
         };
+      },
+    );
 
-        const finalThread = {} as any
+    // Authenticate client
+    const auth = await emailService.authenticateGoogleAuth(1);
 
-        await Promise.all(
-            Object.entries(threads).map(async ([threadId, emails]) => {
-                finalThread[threadId] = {
-                    thread_id : threadId,
-                    emails: [] as any
-                } as any;
+    const gmail: any = google.gmail({ version: "v1", auth });
 
-                emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
-                if(emails.length > 1) {
-                    const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
-                    let emailPart2 = ' '
-                    if(!emailPart){
-                        emailPart2 = namePart
-                    }else{
-                        emailPart2 = emailPart
-                    }
+    //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
+    // const beforeTime = moment("YYYY-MM-DD").unix();
 
+    const responses = await gmail.users.messages.list({
+      userId: "me",
+      q: query,
+    });
 
-                    let htmlContent = `<!DOCTYPE html>
+    console.log("responses.length", responses.data.resultSizeEstimate);
+
+    if (!responses.data.resultSizeEstimate) {
+      console.log("No Message Found...!");
+      return true;
+    }
+
+    // Group emails by threadId
+    const threads: { [key: string]: any[] } = {};
+
+    for (const msg of responses.data.messages) {
+      const email: any = await gmail.users.messages.get({
+        userId: "me",
+        id: msg.id,
+        format: "full",
+      });
+
+      // Get headers and message-id
+      const allHeaders = email.data.payload?.headers || [];
+      const messageIdHeader = allHeaders.find(
+        (header: any) => header.name.toLowerCase() === "message-id",
+      );
+
+      threads[msg.threadId] = threads[msg.threadId] || [];
+
+      const headers = Object.fromEntries(
+        allHeaders.map((header: any) => [header.name, header.value]),
+      );
+
+      // Extract the body
+      let body = "";
+      const payload = email.data.payload;
+
+      if (payload.parts && payload.parts.length) {
+        // For multipart emails
+        for (const part of payload.parts) {
+          if (part.mimeType === "text/html" && part.body?.data) {
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+            break;
+          } else if (part.mimeType === "text/plain" && part.body?.data) {
+            // Fallback to text/plain if html is not found
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+          }
+        }
+      } else if (payload.body && payload.body.data) {
+        // For non-multipart emails (like email 2)
+        const decodedBody = Buffer.from(payload.body.data, "base64").toString(
+          "utf-8",
+        );
+
+        // Extract the content between <body> and </body>
+        const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        body = match ? match[1] : decodedBody;
+      }
+
+      // console.log("body  --------",body);
+
+      threads[msg.threadId].push({
+        id: msg.id,
+        messageId: messageIdHeader,
+        headers,
+        body,
+      });
+    }
+
+    console.log(threads);
+
+    const extractEmailParts = (headerValue: string) => {
+      const match = headerValue.match(/(.*?)\s*<(.*)>/);
+      return match ? [match[1].trim(), match[2]] : [headerValue, ""];
+    };
+
+    const finalThread = {} as any;
+
+    await Promise.all(
+      Object.entries(threads).map(async ([threadId, emails]) => {
+        finalThread[threadId] = {
+          thread_id: threadId,
+          emails: [] as any,
+        } as any;
+
+        emails.sort(
+          (a: any, b: any) =>
+            new Date(a.headers.Date).getTime() -
+            new Date(b.headers.Date).getTime(),
+        );
+        if (emails.length > 1) {
+          const [namePart, emailPart] = extractEmailParts(
+            emails[0].headers.From,
+          );
+          let emailPart2 = " ";
+          if (!emailPart) {
+            emailPart2 = namePart;
+          } else {
+            emailPart2 = emailPart;
+          }
+
+          let htmlContent = `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -922,45 +1069,61 @@ const read_email_client_wise = async (req: any) => {
                         </tr>
                     </table>`;
 
-                    htmlContent += emails.map((email:any) => {
-                        //console.log("inner email",email)
-                        let [senderName, senderEmail] = extractEmailParts(email.headers.From);
-                        let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        //console.log("senderEmail email",senderEmail)
-                        //console.log("recipientEmail email",recipientEmail)
+          htmlContent += emails
+            .map((email: any) => {
+              //console.log("inner email",email)
+              let [senderName, senderEmail] = extractEmailParts(
+                email.headers.From,
+              );
+              let [recipientName, recipientEmail] = extractEmailParts(
+                email.headers.To,
+              );
+              //console.log("senderEmail email",senderEmail)
+              //console.log("recipientEmail email",recipientEmail)
 
-                        // replace Email with can
-                        if (senderEmail.toLowerCase().includes("canned")) {
-                            senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            // console.log("senderEmail",senderEmail)
+              // replace Email with can
+              if (senderEmail.toLowerCase().includes("canned")) {
+                senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@");
+                // console.log("senderEmail",senderEmail)
+              }
 
-                        }
+              let senderEmail2 = " ";
+              if (senderEmail) {
+                senderEmail2 = senderEmail;
+              } else {
+                senderEmail2 = senderName;
+              }
 
-                        let senderEmail2 = ' '
-                        if(senderEmail){
-                            senderEmail2 = senderEmail
-                        }else{
-                            senderEmail2 = senderName
-                        }
+              if (client_proof_info[senderEmail]) {
+                console.log(
+                  "client_proof_info",
+                  client_proof_info[senderEmail],
+                );
+                finalThread[threadId].client_code =
+                  client_proof_info[senderEmail].client_code;
+                finalThread[threadId].client_email =
+                  client_proof_info[senderEmail].client_email;
+                finalThread[threadId].pre_trade_proof_id =
+                  client_proof_info[senderEmail].pre_trade_proof_id;
+                finalThread[threadId].emails = emails;
+              }
 
-                        if(client_proof_info[senderEmail]) {
-                            console.log("client_proof_info",client_proof_info[senderEmail])
-                            finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
-                            finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
-                            finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
-                            finalThread[threadId].emails = emails
-                        }
-
-                        return `<hr>
+              return `<hr>
                 <table width="100%" cellpadding="0" cellspacing="0" class="message">
                     <tr>
                         <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
-                        <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
+                        <td align="right"><font size="-1">${formatDate(
+                          email.headers.Date,
+                        )}</font></td>
                     </tr>
                     <tr>
                         <td colspan="2" style="padding-bottom: 4px;">
                             <font size="-1" class="recipient">
-                                <div>To: ${recipientName} ${recipientEmail ? `&lt;${recipientEmail}&gt;` : ''}</div>
+                                <div>To: ${recipientName} ${
+                                  recipientEmail
+                                    ? `&lt;${recipientEmail}&gt;`
+                                    : ""
+                                }</div>
                             </font>
                         </td>
                     </tr>
@@ -978,169 +1141,211 @@ const read_email_client_wise = async (req: any) => {
                         </td>
                     </tr>
                 </table>`;
-                    }).join('');
-
-                    htmlContent += `</div></div></body></html>`;
-
-                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code || results[0].client_code});
-                    finalThread[threadId].email_url = email_url
-                    await tradeProofsModel.update_pre_trade_proofs({email_url:email_url,is_email_received:1},finalThread[threadId].pre_trade_proof_id || results[0].pre_trade_proof_id);
-                }
-                return true;
             })
-        );
+            .join("");
 
+          htmlContent += `</div></div></body></html>`;
+
+          const email_url =
+            await notificationService.generatePreTradeEmailPdfClientWise(1, {
+              htmlContent,
+              client_code:
+                finalThread[threadId].client_code || results[0].client_code,
+            });
+          finalThread[threadId].email_url = email_url;
+          await tradeProofsModel.update_pre_trade_proofs(
+            { email_url: email_url, is_email_received: 1 },
+            finalThread[threadId].pre_trade_proof_id ||
+              results[0].pre_trade_proof_id,
+          );
+        }
         return true;
-    } catch(error: any) {
-        console.log(error)
-        return  true;
-    }
+      }),
+    );
 
+    return true;
+  } catch (error: any) {
+    console.log(error);
+    return true;
+  }
 };
 
 const read_email_proof_wise = async (req: any) => {
-    try {
+  try {
+    const results = await tradeProofsModel.fetch_trade_unread_proof_Id(
+      req.query.pre_trade_proof_id,
+    );
 
-        const results = await tradeProofsModel.fetch_trade_unread_proof_Id(req.query.pre_trade_proof_id);
+    if (!results.length) {
+      return true;
+    }
+    // Replace with the required subject
+    const subject = "Pre Trade Confirmation " + results[0].client_code;
 
-        if(!results.length) {
-            return true;
-        }
-        // Replace with the required subject
-        const subject = "Pre Trade Confirmation "+results[0].client_code;
+    console.log("results[0].created_date", results[0].created_date);
 
-        console.log("results[0].created_date",results[0].created_date)
+    let date = moment(results[0].created_date).format("YYYY-MM-DD"); // Get today's date
 
-        let date = moment(results[0].created_date).format('YYYY-MM-DD');// Get today's date
+    const timeIST = moment(results[0].formatted_date, "YYYY-MM-DD HH:mm:ss")
+      .subtract(2, "minutes")
+      .format("HH:mm");
 
-        const timeIST = moment(results[0].formatted_date, "YYYY-MM-DD HH:mm:ss").subtract(2, 'minutes').format("HH:mm");
+    console.log("timeIST--->", timeIST);
 
-        console.log("timeIST--->",timeIST)
+    // let startTime = moment(
+    //   `${date} ${timeIST}`,
+    //   "YYYY-MM-DD HH:mm",
+    //   "Asia/Kolkata"
+    // ).unix(); // 7:00 AM IST
+    let startTime = moment(`${date} ${timeIST}`, "YYYY-MM-DD HH:mm").unix();
 
-        let startTime = moment(`${date} ${timeIST}`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 7:00 AM IST
+    let endTime = moment(
+      `${date} 23:00`,
+      "YYYY-MM-DD HH:mm",
+      //   "Asia/Kolkata"
+    ).unix(); // 11:00 PM IST
 
-        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm","Asia/Kolkata").unix(); // 11:00 PM IST
+    let query = `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`;
 
-        let query= `{from:${results[0].client_email} to:${results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
+    console.log("date", date);
+    console.log("startTime", startTime);
+    console.log("endTime", endTime);
 
-        console.log("date",date)
-        console.log("startTime",startTime)
-        console.log("endTime",endTime)
+    const client_proof_info: Record<
+      string,
+      { client_code: string; client_email: string; pre_trade_proof_id: number }
+    > = {};
 
-
-        const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
-
-        results.forEach(({ client_email, client_code, pre_trade_proof_id }: { client_email: string; client_code: string; pre_trade_proof_id: number }) => {
-            const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
-            client_proof_info[emailKey] = { client_code, client_email: emailKey, pre_trade_proof_id };
-        });
-
-        // Authenticate client
-        const auth = await emailService.authenticateGoogleAuth(1);
-
-        const gmail: any = google.gmail({ version: "v1", auth });
-
-
-        //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
-        const beforeTime = moment("YYYY-MM-DD").unix();
-
-        const responses = await gmail.users.messages.list({
-            userId: "me",
-            q: query
-        });
-
-        console.log("responses.length",responses.data.resultSizeEstimate);
-
-        if(!responses.data.resultSizeEstimate) {
-            console.log("No Message Found...!")
-            return true;
-        }
-
-        // Group emails by threadId
-        const threads: { [key: string]: any[] } = {};
-
-        for (const msg of responses.data.messages) {
-            const email: any = await gmail.users.messages.get({
-                userId: "me",
-                id: msg.id,
-                format: "full",
-            });
-
-            // Get headers and message-id
-            const allHeaders = email.data.payload?.headers || [];
-            const messageIdHeader = allHeaders.find((header: any) =>
-                header.name.toLowerCase() === "message-id"
-            );
-
-            threads[msg.threadId] = threads[msg.threadId] || [];
-
-            const headers = Object.fromEntries(
-                allHeaders.map((header: any) => [header.name, header.value])
-            );
-
-            // Extract the body
-            let body = "";
-            const payload = email.data.payload;
-
-            if (payload.parts && payload.parts.length) {
-                // For multipart emails
-                for (const part of payload.parts) {
-                    if (part.mimeType === "text/html" && part.body?.data) {
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                        break;
-                    } else if (part.mimeType === "text/plain" && part.body?.data) {
-                        // Fallback to text/plain if html is not found
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                    }
-                }
-            } else if (payload.body && payload.body.data) {
-                // For non-multipart emails (like email 2)
-                const decodedBody = Buffer.from(payload.body.data, "base64").toString("utf-8");
-
-                // Extract the content between <body> and </body>
-                const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-                body = match ? match[1] : decodedBody;
-            }
-
-            // console.log("body  --------",body);
-
-
-            threads[msg.threadId].push({
-                id: msg.id,
-                messageId: messageIdHeader,
-                headers,
-                body,
-            });
-        }
-
-        console.log(threads);
-
-        const extractEmailParts = (headerValue: string) => {
-            const match = headerValue.match(/(.*?)\s*<(.*)>/);
-            return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+    results.forEach(
+      ({
+        client_email,
+        client_code,
+        pre_trade_proof_id,
+      }: {
+        client_email: string;
+        client_code: string;
+        pre_trade_proof_id: number;
+      }) => {
+        const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
+        client_proof_info[emailKey] = {
+          client_code,
+          client_email: emailKey,
+          pre_trade_proof_id,
         };
+      },
+    );
 
-        const finalThread = {} as any
+    // Authenticate client
+    const auth = await emailService.authenticateGoogleAuth(1);
 
-        await Promise.all(
-            Object.entries(threads).map(async ([threadId, emails]) => {
-                finalThread[threadId] = {
-                    thread_id : threadId,
-                    emails: [] as any
-                } as any;
+    const gmail: any = google.gmail({ version: "v1", auth });
 
-                emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
-                if(emails.length > 1) {
-                    const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
-                    let emailPart2 = ' '
-                    if(!emailPart){
-                        emailPart2 = namePart
-                    }else{
-                        emailPart2 = emailPart
-                    }
+    //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
+    // const beforeTime = moment("YYYY-MM-DD").unix();
 
+    const responses = await gmail.users.messages.list({
+      userId: "me",
+      q: query,
+    });
 
-                    let htmlContent = `<!DOCTYPE html>
+    console.log("responses.length", responses.data.resultSizeEstimate);
+
+    if (!responses.data.resultSizeEstimate) {
+      console.log("No Message Found...!");
+      return true;
+    }
+
+    // Group emails by threadId
+    const threads: { [key: string]: any[] } = {};
+
+    for (const msg of responses.data.messages) {
+      const email: any = await gmail.users.messages.get({
+        userId: "me",
+        id: msg.id,
+        format: "full",
+      });
+
+      // Get headers and message-id
+      const allHeaders = email.data.payload?.headers || [];
+      const messageIdHeader = allHeaders.find(
+        (header: any) => header.name.toLowerCase() === "message-id",
+      );
+
+      threads[msg.threadId] = threads[msg.threadId] || [];
+
+      const headers = Object.fromEntries(
+        allHeaders.map((header: any) => [header.name, header.value]),
+      );
+
+      // Extract the body
+      let body = "";
+      const payload = email.data.payload;
+
+      if (payload.parts && payload.parts.length) {
+        // For multipart emails
+        for (const part of payload.parts) {
+          if (part.mimeType === "text/html" && part.body?.data) {
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+            break;
+          } else if (part.mimeType === "text/plain" && part.body?.data) {
+            // Fallback to text/plain if html is not found
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+          }
+        }
+      } else if (payload.body && payload.body.data) {
+        // For non-multipart emails (like email 2)
+        const decodedBody = Buffer.from(payload.body.data, "base64").toString(
+          "utf-8",
+        );
+
+        // Extract the content between <body> and </body>
+        const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        body = match ? match[1] : decodedBody;
+      }
+
+      // console.log("body  --------",body);
+
+      threads[msg.threadId].push({
+        id: msg.id,
+        messageId: messageIdHeader,
+        headers,
+        body,
+      });
+    }
+
+    console.log(threads);
+
+    const extractEmailParts = (headerValue: string) => {
+      const match = headerValue.match(/(.*?)\s*<(.*)>/);
+      return match ? [match[1].trim(), match[2]] : [headerValue, ""];
+    };
+
+    const finalThread = {} as any;
+
+    await Promise.all(
+      Object.entries(threads).map(async ([threadId, emails]) => {
+        finalThread[threadId] = {
+          thread_id: threadId,
+          emails: [] as any,
+        } as any;
+
+        emails.sort(
+          (a: any, b: any) =>
+            new Date(a.headers.Date).getTime() -
+            new Date(b.headers.Date).getTime(),
+        );
+        if (emails.length > 1) {
+          const [namePart, emailPart] = extractEmailParts(
+            emails[0].headers.From,
+          );
+          let emailPart2 = " ";
+          if (!emailPart) {
+            emailPart2 = namePart;
+          } else {
+            emailPart2 = emailPart;
+          }
+
+          let htmlContent = `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1180,45 +1385,61 @@ const read_email_proof_wise = async (req: any) => {
                         </tr>
                     </table>`;
 
-                    htmlContent += emails.map((email:any) => {
-                        //console.log("inner email",email)
-                        let [senderName, senderEmail] = extractEmailParts(email.headers.From);
-                        let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        console.log("senderEmail email",senderEmail)
-                        console.log("recipientEmail email",recipientEmail)
+          htmlContent += emails
+            .map((email: any) => {
+              //console.log("inner email",email)
+              let [senderName, senderEmail] = extractEmailParts(
+                email.headers.From,
+              );
+              let [recipientName, recipientEmail] = extractEmailParts(
+                email.headers.To,
+              );
+              console.log("senderEmail email", senderEmail);
+              console.log("recipientEmail email", recipientEmail);
 
-                        // replace Email with can
-                        if (senderEmail.toLowerCase().includes("canned")) {
-                            senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            console.log("senderEmail",senderEmail)
+              // replace Email with can
+              if (senderEmail.toLowerCase().includes("canned")) {
+                senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@");
+                console.log("senderEmail", senderEmail);
+              }
 
-                        }
+              let senderEmail2 = " ";
+              if (senderEmail) {
+                senderEmail2 = senderEmail;
+              } else {
+                senderEmail2 = senderName;
+              }
 
-                        let senderEmail2 = ' '
-                        if(senderEmail){
-                            senderEmail2 = senderEmail
-                        }else{
-                            senderEmail2 = senderName
-                        }
+              if (client_proof_info[senderEmail]) {
+                console.log(
+                  "client_proof_info",
+                  client_proof_info[senderEmail],
+                );
+                finalThread[threadId].client_code =
+                  client_proof_info[senderEmail].client_code;
+                finalThread[threadId].client_email =
+                  client_proof_info[senderEmail].client_email;
+                finalThread[threadId].pre_trade_proof_id =
+                  client_proof_info[senderEmail].pre_trade_proof_id;
+                finalThread[threadId].emails = emails;
+              }
 
-                        if(client_proof_info[senderEmail]) {
-                            console.log("client_proof_info",client_proof_info[senderEmail])
-                            finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
-                            finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
-                            finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
-                            finalThread[threadId].emails = emails
-                        }
-
-                        return `<hr>
+              return `<hr>
                 <table width="100%" cellpadding="0" cellspacing="0" class="message">
                     <tr>
                         <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
-                        <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
+                        <td align="right"><font size="-1">${formatDate(
+                          email.headers.Date,
+                        )}</font></td>
                     </tr>
                     <tr>
                         <td colspan="2" style="padding-bottom: 4px;">
                             <font size="-1" class="recipient">
-                                <div>To: ${recipientName} ${recipientEmail ? `&lt;${recipientEmail}&gt;` : ''}</div>
+                                <div>To: ${recipientName} ${
+                                  recipientEmail
+                                    ? `&lt;${recipientEmail}&gt;`
+                                    : ""
+                                }</div>
                             </font>
                         </td>
                     </tr>
@@ -1236,167 +1457,215 @@ const read_email_proof_wise = async (req: any) => {
                         </td>
                     </tr>
                 </table>`;
-                    }).join('');
-
-                    htmlContent += `</div></div></body></html>`;
-
-                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code || results[0].client_code });
-                    finalThread[threadId].email_url = email_url
-                    console.log(email_url)
-                    await tradeProofsModel.update_pre_trade_proofs({email_url:email_url,is_email_received:1},finalThread[threadId].pre_trade_proof_id || results[0].pre_trade_proof_id);
-                }
-                return true;
             })
-        );
+            .join("");
 
+          htmlContent += `</div></div></body></html>`;
+
+          const email_url =
+            await notificationService.generatePreTradeEmailPdfClientWise(1, {
+              htmlContent,
+              client_code:
+                finalThread[threadId].client_code || results[0].client_code,
+            });
+          finalThread[threadId].email_url = email_url;
+          console.log(email_url);
+          await tradeProofsModel.update_pre_trade_proofs(
+            { email_url: email_url, is_email_received: 1 },
+            finalThread[threadId].pre_trade_proof_id ||
+              results[0].pre_trade_proof_id,
+          );
+        }
         return true;
-    } catch(error: any) {
-        console.log(error)
-        return  true;
-    }
+      }),
+    );
 
+    return true;
+  } catch (error: any) {
+    console.log(error);
+    return true;
+  }
 };
 
-const read_email_client_scheduler= async (body: any) => {
-    try {
+const read_email_client_scheduler = async (body: any) => {
+  try {
+    // Replace with the required subject
+    // const subject = "Pre Trade Confirmation";
+    const subject = "Pre Trade Confirmation " + body.results[0].client_code;
 
-        // Replace with the required subject
-        // const subject = "Pre Trade Confirmation";
-        const subject = "Pre Trade Confirmation "+body.results[0].client_code;
+    let date = moment(body.results[0].created_date).format("YYYY-MM-DD"); // Get today's date
 
-        let date = moment(body.results[0].created_date).format('YYYY-MM-DD');// Get today's date
+    let timeIST = moment(body.results[0].formatted_date, "YYYY-MM-DD HH:mm:ss")
+      .subtract(2, "minutes")
+      .format("HH:mm");
 
-        let timeIST = moment(body.results[0].formatted_date, "YYYY-MM-DD HH:mm:ss").subtract(2, 'minutes').format("HH:mm");
+    // let startTime = moment(
+    //   `${date} ${timeIST}`,
+    //   "YYYY-MM-DD HH:mm",
+    //   "Asia/Kolkata"
+    // ).unix(); // 7:00 AM IST
+    let startTime = moment(`${date} ${timeIST}`, "YYYY-MM-DD HH:mm").unix();
 
-        let startTime = moment(`${date} ${timeIST}`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 7:00 AM IST
+    let endTime = moment(
+      `${date} 23:00`,
+      "YYYY-MM-DD HH:mm",
+      //   "Asia/Kolkata"
+    ).unix(); // 11:00 PM IST
 
-        let endTime = moment(`${date} 23:00`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
+    let query = `{from:${body.results[0].client_email} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`;
 
-        let query= `{from:${ body.results[0].client_email} to:${body.results[0].client_email}} subject:"${subject}" after:${startTime} before:${endTime}`
+    if (body.results[0].is_auto_reply) {
+      const endTimeIST = moment(
+        body.results[0].formatted_date,
+        "YYYY-MM-DD HH:mm:ss",
+      )
+        .add(25, "minutes")
+        .format("HH:mm");
+      endTime = moment(
+        `${date} ${endTimeIST}`,
+        "YYYY-MM-DD HH:mm",
+        // "Asia/Kolkata"
+      ).unix(); // 11:00 PM IST
+    }
 
-        if( body.results[0].is_auto_reply ) {
+    console.log("date", date);
+    console.log("startTime", startTime);
+    console.log("endTime", endTime);
+    console.log("query", query);
 
-            const endTimeIST = moment(body.results[0].formatted_date, "YYYY-MM-DD HH:mm:ss").add(25, 'minutes').format("HH:mm");
-            endTime = moment(`${date} ${endTimeIST}`, "YYYY-MM-DD HH:mm", "Asia/Kolkata").unix(); // 11:00 PM IST
-        }
+    const client_proof_info: Record<
+      string,
+      { client_code: string; client_email: string; pre_trade_proof_id: number }
+    > = {};
 
-        console.log("date",date)
-        console.log("startTime",startTime)
-        console.log("endTime",endTime)
-        console.log("query",query)
-
-        const client_proof_info: Record<string, { client_code: string; client_email: string; pre_trade_proof_id: number }> = {};
-
-        body.results.forEach(({ client_email, client_code, pre_trade_proof_id }: { client_email: string; client_code: string; pre_trade_proof_id: number }) => {
-            const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
-            client_proof_info[emailKey] = { client_code, client_email: emailKey, pre_trade_proof_id };
-        });
-
-
-
-        // Authenticate client
-        const auth = await emailService.authenticateGoogleAuth(1);
-
-        const gmail: any = google.gmail({ version: "v1", auth });
-
-
-        //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
-        const beforeTime = moment("YYYY-MM-DD").unix();
-
-        const responses = await gmail.users.messages.list({
-            userId: "me",
-            q: query
-        });
-
-        console.log("responses.length",responses.data.resultSizeEstimate);
-
-        if(!responses.data.resultSizeEstimate) {
-            console.log("No Message Found...!")
-            return true;
-        }
-
-        // Group emails by threadId
-        const threads: { [key: string]: any[] } = {};
-
-        for (const msg of responses.data.messages) {
-            const email: any = await gmail.users.messages.get({
-                userId: "me",
-                id: msg.id,
-                format: "full",
-            });
-
-            // Get headers and message-id
-            const allHeaders = email.data.payload?.headers || [];
-            const messageIdHeader = allHeaders.find((header: any) =>
-                header.name.toLowerCase() === "message-id"
-            );
-
-            threads[msg.threadId] = threads[msg.threadId] || [];
-
-            const headers = Object.fromEntries(
-                allHeaders.map((header: any) => [header.name, header.value])
-            );
-
-            // Extract the body
-            let body = "";
-            const payload = email.data.payload;
-
-            if (payload.parts && payload.parts.length) {
-                // For multipart emails
-                for (const part of payload.parts) {
-                    if (part.mimeType === "text/html" && part.body?.data) {
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                        break;
-                    } else if (part.mimeType === "text/plain" && part.body?.data) {
-                        // Fallback to text/plain if html is not found
-                        body = Buffer.from(part.body.data, "base64").toString("utf-8");
-                    }
-                }
-            } else if (payload.body && payload.body.data) {
-                // For non-multipart emails (like email 2)
-                const decodedBody = Buffer.from(payload.body.data, "base64").toString("utf-8");
-
-                // Extract the content between <body> and </body>
-                const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-                body = match ? match[1] : decodedBody;
-            }
-
-            // console.log("body  --------",body);
-
-
-            threads[msg.threadId].push({
-                id: msg.id,
-                messageId: messageIdHeader,
-                headers,
-                body,
-            });
-        }
-
-        const extractEmailParts = (headerValue: string) => {
-            const match = headerValue.match(/(.*?)\s*<(.*)>/);
-            return match ? [match[1].trim(), match[2]] : [headerValue, ''];
+    body.results.forEach(
+      ({
+        client_email,
+        client_code,
+        pre_trade_proof_id,
+      }: {
+        client_email: string;
+        client_code: string;
+        pre_trade_proof_id: number;
+      }) => {
+        const emailKey = client_email.toLowerCase(); // Normalize email to lowercase
+        client_proof_info[emailKey] = {
+          client_code,
+          client_email: emailKey,
+          pre_trade_proof_id,
         };
+      },
+    );
 
-        const finalThread = {} as any
+    // Authenticate client
+    const auth = await emailService.authenticateGoogleAuth(1);
 
-        await Promise.all(
-            Object.entries(threads).map(async ([threadId, emails]) => {
-                finalThread[threadId] = {
-                    thread_id : threadId,
-                    emails: [] as any
-                } as any;
+    const gmail: any = google.gmail({ version: "v1", auth });
 
-                emails.sort((a:any, b:any) => new Date(a.headers.Date).getTime() - new Date(b.headers.Date).getTime());
-                if(emails.length > 1) {
-                    const [namePart, emailPart] = extractEmailParts(emails[0].headers.From);
-                    let emailPart2 = ' '
-                    if(!emailPart){
-                        emailPart2 = namePart
-                    }else{
-                        emailPart2 = emailPart
-                    }
+    //const timeStamp = moment().subtract(10, "minutes").unix();  // Get the current Unix timestamp in seconds
+    // const beforeTime = moment("YYYY-MM-DD").unix();
 
-                    let htmlContent = `<!DOCTYPE html>
+    const responses = await gmail.users.messages.list({
+      userId: "me",
+      q: query,
+    });
+
+    console.log("responses.length", responses.data.resultSizeEstimate);
+
+    if (!responses.data.resultSizeEstimate) {
+      console.log("No Message Found...!");
+      return true;
+    }
+
+    // Group emails by threadId
+    const threads: { [key: string]: any[] } = {};
+
+    for (const msg of responses.data.messages) {
+      const email: any = await gmail.users.messages.get({
+        userId: "me",
+        id: msg.id,
+        format: "full",
+      });
+
+      // Get headers and message-id
+      const allHeaders = email.data.payload?.headers || [];
+      const messageIdHeader = allHeaders.find(
+        (header: any) => header.name.toLowerCase() === "message-id",
+      );
+
+      threads[msg.threadId] = threads[msg.threadId] || [];
+
+      const headers = Object.fromEntries(
+        allHeaders.map((header: any) => [header.name, header.value]),
+      );
+
+      // Extract the body
+      let body = "";
+      const payload = email.data.payload;
+
+      if (payload.parts && payload.parts.length) {
+        // For multipart emails
+        for (const part of payload.parts) {
+          if (part.mimeType === "text/html" && part.body?.data) {
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+            break;
+          } else if (part.mimeType === "text/plain" && part.body?.data) {
+            // Fallback to text/plain if html is not found
+            body = Buffer.from(part.body.data, "base64").toString("utf-8");
+          }
+        }
+      } else if (payload.body && payload.body.data) {
+        // For non-multipart emails (like email 2)
+        const decodedBody = Buffer.from(payload.body.data, "base64").toString(
+          "utf-8",
+        );
+
+        // Extract the content between <body> and </body>
+        const match = decodedBody.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        body = match ? match[1] : decodedBody;
+      }
+
+      // console.log("body  --------",body);
+
+      threads[msg.threadId].push({
+        id: msg.id,
+        messageId: messageIdHeader,
+        headers,
+        body,
+      });
+    }
+
+    const extractEmailParts = (headerValue: string) => {
+      const match = headerValue.match(/(.*?)\s*<(.*)>/);
+      return match ? [match[1].trim(), match[2]] : [headerValue, ""];
+    };
+
+    const finalThread = {} as any;
+
+    await Promise.all(
+      Object.entries(threads).map(async ([threadId, emails]) => {
+        finalThread[threadId] = {
+          thread_id: threadId,
+          emails: [] as any,
+        } as any;
+
+        emails.sort(
+          (a: any, b: any) =>
+            new Date(a.headers.Date).getTime() -
+            new Date(b.headers.Date).getTime(),
+        );
+        if (emails.length > 1) {
+          const [namePart, emailPart] = extractEmailParts(
+            emails[0].headers.From,
+          );
+          let emailPart2 = " ";
+          if (!emailPart) {
+            emailPart2 = namePart;
+          } else {
+            emailPart2 = emailPart;
+          }
+
+          let htmlContent = `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1436,43 +1705,56 @@ const read_email_client_scheduler= async (body: any) => {
                         </tr>
                     </table>`;
 
-                    htmlContent += emails.map((email:any) => {
-                        //console.log("inner email",email)
-                        let [senderName, senderEmail] = extractEmailParts(email.headers.From);
-                        let [recipientName, recipientEmail] = extractEmailParts(email.headers.To);
-                        //console.log("senderEmail email",senderEmail)
-                        //console.log("recipientEmail email",recipientEmail)
+          htmlContent += emails
+            .map((email: any) => {
+              //console.log("inner email",email)
+              let [senderName, senderEmail] = extractEmailParts(
+                email.headers.From,
+              );
+              let [recipientName, recipientEmail] = extractEmailParts(
+                email.headers.To,
+              );
+              //console.log("senderEmail email",senderEmail)
+              //console.log("recipientEmail email",recipientEmail)
 
-                        // replace Email with can
-                        if (senderEmail.toLowerCase().includes("canned")) {
-                            senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@")
-                            // console.log("senderEmail",senderEmail)
+              // replace Email with can
+              if (senderEmail.toLowerCase().includes("canned")) {
+                senderEmail = senderEmail.replace(/(\+[^@]*)@/, "@");
+                // console.log("senderEmail",senderEmail)
+              }
 
-                        }
+              let senderEmail2 = " ";
+              if (senderEmail) {
+                senderEmail2 = senderEmail;
+              } else {
+                senderEmail2 = senderName;
+              }
+              if (client_proof_info[senderEmail]) {
+                finalThread[threadId].client_code =
+                  client_proof_info[senderEmail].client_code;
+                finalThread[threadId].client_email =
+                  client_proof_info[senderEmail].client_email;
+                finalThread[threadId].pre_trade_proof_id =
+                  client_proof_info[senderEmail].pre_trade_proof_id;
+                finalThread[threadId].emails = emails;
+              }
 
-                        let senderEmail2 = ' '
-                        if(senderEmail){
-                            senderEmail2 = senderEmail
-                        }else{
-                            senderEmail2 = senderName
-                        }
-                        if(client_proof_info[senderEmail]) {
-                            finalThread[threadId].client_code = client_proof_info[senderEmail].client_code;
-                            finalThread[threadId].client_email = client_proof_info[senderEmail].client_email;
-                            finalThread[threadId].pre_trade_proof_id = client_proof_info[senderEmail].pre_trade_proof_id;
-                            finalThread[threadId].emails = emails
-                        }
-
-                        return `<hr>
+              return `<hr>
                 <table width="100%" cellpadding="0" cellspacing="0" class="message">
                     <tr>
                         <td><font size="-1"><b>${senderName}</b> &lt;${senderEmail2}&gt;</font></td>
-                        <td align="right"><font size="-1">${formatDate(email.headers.Date)}</font></td>
+                        <td align="right"><font size="-1">${formatDate(
+                          email.headers.Date,
+                        )}</font></td>
                     </tr>
                     <tr>
                         <td colspan="2" style="padding-bottom: 4px;">
                             <font size="-1" class="recipient">
-                                <div>To: ${recipientName} ${recipientEmail ? `&lt;${recipientEmail}&gt;` : ''}</div>
+                                <div>To: ${recipientName} ${
+                                  recipientEmail
+                                    ? `&lt;${recipientEmail}&gt;`
+                                    : ""
+                                }</div>
                             </font>
                         </td>
                     </tr>
@@ -1490,45 +1772,63 @@ const read_email_client_scheduler= async (body: any) => {
                         </td>
                     </tr>
                 </table>`;
-                    }).join('');
-
-                    htmlContent += `</div></div></body></html>`;
-
-                    const email_url = await notificationService.generatePreTradeEmailPdfClientWise(1, { htmlContent, client_code: finalThread[threadId].client_code || body.results[0].client_code });
-                    finalThread[threadId].email_url = email_url
-                    console.log("Email Read Successfully---Proof_id:",finalThread[threadId].pre_trade_proof_id || body.results[0].pre_trade_proof_id," Client Code:",finalThread[threadId].client_code || body.results[0].client_code ," URL:",email_url)
-                    await tradeProofsModel.update_pre_trade_proofs({is_email_received:1,email_url:email_url},finalThread[threadId].pre_trade_proof_id || body.results[0].pre_trade_proof_id);
-                }
-                return true;
             })
-        );
-        return true;
-    } catch(error: any) {
-        console.log(error)
-        return  true;
-    }
+            .join("");
 
+          htmlContent += `</div></div></body></html>`;
+
+          const email_url =
+            await notificationService.generatePreTradeEmailPdfClientWise(1, {
+              htmlContent,
+              client_code:
+                finalThread[threadId].client_code ||
+                body.results[0].client_code,
+            });
+          finalThread[threadId].email_url = email_url;
+          console.log(
+            "Email Read Successfully---Proof_id:",
+            finalThread[threadId].pre_trade_proof_id ||
+              body.results[0].pre_trade_proof_id,
+            " Client Code:",
+            finalThread[threadId].client_code || body.results[0].client_code,
+            " URL:",
+            email_url,
+          );
+          await tradeProofsModel.update_pre_trade_proofs(
+            { is_email_received: 1, email_url: email_url },
+            finalThread[threadId].pre_trade_proof_id ||
+              body.results[0].pre_trade_proof_id,
+          );
+        }
+        return true;
+      }),
+    );
+    return true;
+  } catch (error: any) {
+    console.log(error);
+    return true;
+  }
 };
 
 function formatDate(dateString: string) {
-    const date = new Date(dateString);
+  const date = new Date(dateString);
 
-    return new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "Asia/Kolkata", // Set to IST
-    }).format(date);
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata", // Set to IST
+  }).format(date);
 }
 
 export default {
-    read_email: read_email,
-    read_email_auto: read_email_auto,
-    read_email_client_wise: read_email_client_wise,
-    read_email_client_scheduler: read_email_client_scheduler,
-    read_email_proof_wise:read_email_proof_wise
-}
+  read_email: read_email,
+  read_email_auto: read_email_auto,
+  read_email_client_wise: read_email_client_wise,
+  read_email_client_scheduler: read_email_client_scheduler,
+  read_email_proof_wise: read_email_proof_wise,
+};

@@ -46,11 +46,10 @@ class FileStorageService {
     path = path.replace(/^public\//, "").replace(/^files\//, "");
 
     // Handle old AWS patterns
-    if (path.startsWith("proofs/")) {
-      // proofs/organization_1/pdfs/file.pdf -> organization_1/emails/file.pdf
-      path = path
-        .replace("proofs/", "");
-    }
+    // if (path.startsWith("proofs/")) {
+    //   // proofs/organization_1/pdfs/file.pdf -> organization_1/emails/file.pdf
+    //   path = path.replace("proofs/", "");
+    // }
 
     // Remove tenant/bucket prefixes if they exist
     if (path.startsWith(`${this.tenantSlug}/`)) {
@@ -88,7 +87,15 @@ class FileStorageService {
       }
     }
 
-    // Return just the organization path: organization_1/emails/filename.pdf
+    // Ensure proofs/ prefix is present for organization paths
+    if (
+      cleanPath.startsWith("organization_") &&
+      !cleanPath.startsWith("proofs/")
+    ) {
+      cleanPath = `proofs/${cleanPath}`;
+    }
+
+    // Return path with proofs/ prefix: proofs/organization_1/emails/filename.pdf
     return cleanPath;
   }
 
@@ -100,7 +107,7 @@ class FileStorageService {
       // In your file storage service, folders are created automatically with files
       // This is just for compatibility
       console.log(
-        `Folder will be created with first file upload: ${folderName}`
+        `Folder will be created with first file upload: ${folderName}`,
       );
     } catch (error: any) {
       console.error(`Error creating folder: ${error.message}`);
@@ -118,7 +125,7 @@ class FileStorageService {
         `/api/v1/files/bucket/${this.defaultBucket}/folder`,
         {
           params: { folder: folderName },
-        }
+        },
       );
       return response.data.data && response.data.data.length > 0;
     } catch (error: any) {
@@ -137,7 +144,7 @@ class FileStorageService {
   async uploadFile(
     fileStream: any,
     folderPath: string,
-    fileName: string
+    fileName: string,
   ): Promise<any> {
     try {
       const formData = new FormData();
@@ -157,7 +164,7 @@ class FileStorageService {
           headers: {
             ...formData.getHeaders(),
           },
-        }
+        },
       );
 
       const file = response.data.data.file;
@@ -223,7 +230,7 @@ class FileStorageService {
           headers: {
             ...formData.getHeaders(),
           },
-        }
+        },
       );
 
       const file = response.data.data.file;
@@ -281,7 +288,7 @@ class FileStorageService {
             folder: folderPath,
             limit: 1000,
           },
-        }
+        },
       );
 
       // Try multiple matching strategies
@@ -310,7 +317,7 @@ class FileStorageService {
         console.error(`File not found in folder ${folderPath}:`, fileName);
         console.error(
           `Available files:`,
-          response.data.data.map((f: any) => f.originalName)
+          response.data.data.map((f: any) => f.originalName),
         );
         throw new Error(`File not found: ${fileName} in ${folderPath}`);
       }
@@ -320,7 +327,7 @@ class FileStorageService {
       // Download the file
       const downloadResponse = await this.apiClient.get(
         `/api/v1/files/${file.id}/download`,
-        { responseType: "stream" }
+        { responseType: "stream" },
       );
 
       const writer = fs.createWriteStream(localPath);
@@ -369,12 +376,12 @@ class FileStorageService {
             folder: path.dirname(translatedPath),
             limit: 1000,
           },
-        }
+        },
       );
 
       const fileName = path.basename(translatedPath);
       const file = response.data.data.find(
-        (f: any) => f.storedName === fileName || f.originalName === fileName
+        (f: any) => f.storedName === fileName || f.originalName === fileName,
       );
 
       if (!file) {
@@ -383,7 +390,7 @@ class FileStorageService {
 
       const contentResponse = await this.apiClient.get(
         `/api/v1/files/${file.id}/download`,
-        { responseType: "text" }
+        { responseType: "text" },
       );
 
       return contentResponse.data;
@@ -407,12 +414,12 @@ class FileStorageService {
             folder: path.dirname(translatedPath),
             limit: 1000,
           },
-        }
+        },
       );
 
       const fileName = path.basename(translatedPath);
       const file = response.data.data.find(
-        (f: any) => f.storedName === fileName || f.originalName === fileName
+        (f: any) => f.storedName === fileName || f.originalName === fileName,
       );
 
       if (!file) {
@@ -433,7 +440,7 @@ class FileStorageService {
   // ============================================
   async createSignedUrl(
     key: string,
-    expiresIn: number = 3600
+    expiresIn: number = 3600,
   ): Promise<string> {
     try {
       const translatedPath = this.translateLegacyPath(key);
@@ -445,12 +452,12 @@ class FileStorageService {
             folder: path.dirname(translatedPath),
             limit: 1000,
           },
-        }
+        },
       );
 
       const fileName = path.basename(translatedPath);
       const file = response.data.data.find(
-        (f: any) => f.storedName === fileName || f.originalName === fileName
+        (f: any) => f.storedName === fileName || f.originalName === fileName,
       );
 
       if (!file) {
@@ -459,7 +466,7 @@ class FileStorageService {
 
       const signedUrlResponse = await this.apiClient.post(
         `/api/v1/files/${file.id}/signed-url`,
-        { expiresIn }
+        { expiresIn },
       );
 
       return signedUrlResponse.data.data.signedUrl;

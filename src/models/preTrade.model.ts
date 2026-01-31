@@ -13,7 +13,7 @@ class ClientTradeModel extends BaseModel {
     search_text: any,
     limit: any,
     offset: any,
-    sort: any
+    sort: any,
   ) {
     let parameters = [];
     parameters.push(organization_id);
@@ -56,7 +56,7 @@ class ClientTradeModel extends BaseModel {
   async fetchAllClientsTradesCountByOrganization(
     organization_id: number,
     filter_data: any,
-    search_text: any
+    search_text: any,
   ) {
     let parameters = [];
     parameters.push(organization_id);
@@ -90,7 +90,7 @@ class ClientTradeModel extends BaseModel {
   async fetchAllClientsProofsStatistics(
     organization_id: number,
     filter_data: any,
-    search_text: any
+    search_text: any,
   ) {
     let parameters = [];
     parameters.push(organization_id);
@@ -137,7 +137,7 @@ class ClientTradeModel extends BaseModel {
   async fetchAllOrganizationProofsStatistics(
     organization_id: number,
     filter_data: any,
-    search_text: any
+    search_text: any,
   ) {
     let parameters = [];
     parameters.push(organization_id);
@@ -161,7 +161,7 @@ class ClientTradeModel extends BaseModel {
   async fetchAllOrganizationDateProofsStatistics(
     organization_id: number,
     filter_data: any,
-    search_text: any
+    search_text: any,
   ) {
     let parameters = [];
     parameters.push(organization_id);
@@ -233,7 +233,7 @@ class ClientTradeModel extends BaseModel {
     searchText: any,
     limit: any,
     offset: any,
-    sort: any
+    sort: any,
   ) {
     let parameters = [];
     parameters.push(client_id);
@@ -262,7 +262,7 @@ class ClientTradeModel extends BaseModel {
 
   async fetch_all_clients_trades_logs_count(
     client_id: number,
-    searchText: any
+    searchText: any,
   ) {
     let parameters = [];
     parameters.push(client_id);
@@ -299,10 +299,12 @@ class ClientTradeModel extends BaseModel {
     CASE 
       WHEN pdf_url IS NULL THEN NULL
       WHEN pdf_url LIKE 'http%' THEN pdf_url
-      WHEN pdf_url LIKE 'organization_%' THEN 
+      WHEN pdf_url LIKE 'proofs/%' THEN 
         CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/', pdf_url)
+      WHEN pdf_url LIKE 'organization_%' THEN 
+        CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/proofs/', pdf_url)
       ELSE CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/', pdf_url)
-    END as pdf_url,
+      END as pdf_url,
     email_response, status, created_by, updated_by, created_date, updated_date
     FROM pre_trade_proofs WHERE client_id = ?`;
     return await this._executeQuery(query, [client_is]);
@@ -314,17 +316,21 @@ class ClientTradeModel extends BaseModel {
     CASE 
       WHEN pdf_url IS NULL THEN NULL
       WHEN pdf_url LIKE 'http%' THEN pdf_url
-      WHEN pdf_url LIKE 'organization_%' THEN 
+      WHEN pdf_url LIKE 'proofs/%' THEN 
         CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/', pdf_url)
+      WHEN pdf_url LIKE 'organization_%' THEN 
+        CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/proofs/', pdf_url)
       ELSE CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/', pdf_url)
-    END as pdf_url,
+      END as pdf_url,
     CASE 
       WHEN email_url IS NULL THEN NULL
       WHEN email_url LIKE 'http%' THEN email_url
-      WHEN email_url LIKE 'organization_%' THEN 
+      WHEN email_url LIKE 'proofs/%' THEN 
         CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/', email_url)
+      WHEN email_url LIKE 'organization_%' THEN 
+        CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/proofs/', email_url)
       ELSE CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/', email_url)
-    END as email_url
+      END as email_url
     FROM pre_trade_proofs`;
     return await this._executeQuery(query, []);
   }
@@ -335,17 +341,21 @@ class ClientTradeModel extends BaseModel {
     CASE 
       WHEN pdf_url IS NULL THEN NULL
       WHEN pdf_url LIKE 'http%' THEN pdf_url
-      WHEN pdf_url LIKE 'organization_%' THEN 
+      WHEN pdf_url LIKE 'proofs/%' THEN 
         CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/', pdf_url)
+      WHEN pdf_url LIKE 'organization_%' THEN 
+        CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/proofs/', pdf_url)
       ELSE CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/', pdf_url)
-    END as pdf_url,
+      END as pdf_url,
     CASE 
       WHEN email_url IS NULL THEN NULL
       WHEN email_url LIKE 'http%' THEN email_url
-      WHEN email_url LIKE 'organization_%' THEN 
+      WHEN email_url LIKE 'proofs/%' THEN 
         CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/', email_url)
+      WHEN email_url LIKE 'organization_%' THEN 
+        CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/${CONFIGS.FILE_STORAGE.TENANT_SLUG}/${CONFIGS.FILE_STORAGE.DEFAULT_BUCKET}/proofs/', email_url)
       ELSE CONCAT('${CONFIGS.FILE_STORAGE.PUBLIC_URL}/', email_url)
-    END as email_url
+      END as email_url
     FROM pre_trade_proofs WHERE client_id = ?`;
     return await this._executeQuery(query, [client_id]);
   }

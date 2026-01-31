@@ -31,7 +31,7 @@ const upload = multer({ storage }).array("file", 10); // Allow up to 10 files
 
 // Middleware to handle form data and file reports
 const parseFormData = async (
-  req: any
+  req: any,
 ): Promise<{
   fields: any;
   files: { filepath: string; originalFilename: string }[];
@@ -104,7 +104,7 @@ const parseExcelFile = async (filepath: string): Promise<any[]> => {
 const createOutputFile = (
   data: any[],
   outputDirectory: string,
-  fileName: string
+  fileName: string,
 ): string => {
   try {
     if (!fs.existsSync(outputDirectory)) {
@@ -176,11 +176,12 @@ const uploadPdfFileToS3Bucket = async (organization_id: any, body: any) => {
     console.log("uploadPdfFileToS3Bucket", organization_id);
 
     // Use consistent folder structure
-    const s3FolderPath = `organization_${organization_id}/pdfs`;
+    // const s3FolderPath = `organization_${organization_id}/pdfs`;
+    const s3FolderPath = `proofs/organization_${organization_id}/pdfs`;
 
     const result = await fileStorageService.uploadLocalFile(
       body.file_path,
-      `${s3FolderPath}/${body.file_name}`
+      `${s3FolderPath}/${body.file_name}`,
     );
 
     // Return just the path that should be saved to database
@@ -229,16 +230,16 @@ const uploadPdfFileToS3Bucket = async (organization_id: any, body: any) => {
 
 const uploadSampleEmailPdfFileToS3Bucket = async (
   organization_id: any,
-  body: any
+  body: any,
 ) => {
   try {
     console.log("uploadSampleEmailPdfFileToS3Bucket", organization_id);
 
-    const s3FolderPath = `organization_${organization_id}/sample_email_pdfs`;
+    const s3FolderPath = `proofs/organization_${organization_id}/sample_email_pdfs`;
 
     const result = await fileStorageService.uploadLocalFile(
       body.file_path,
-      `${s3FolderPath}/${body.file_name}`
+      `${s3FolderPath}/${body.file_name}`,
     );
 
     return result.Key || result.key;
@@ -287,13 +288,13 @@ const uploadZipFileToS3Bucket = async (organization_id: any, body: any) => {
       organization_id = 1; // Default fallback
     }
 
-    const s3FolderPath = `organization_${organization_id}/zipped`;
+    const s3FolderPath = `proofs/organization_${organization_id}/zipped`;
 
     const fileStream = fs.createReadStream(body.file_path);
     const result = await fileStorageService.uploadFile(
       fileStream,
       s3FolderPath,
-      body.file_name
+      body.file_name,
     );
 
     return result.Location;
@@ -343,11 +344,11 @@ const uploadEmailFileToS3Bucket = async (organization_id: any, body: any) => {
   try {
     console.log("uploadEmailFileToS3Bucket", organization_id);
 
-    const s3FolderPath = `organization_${organization_id}/emails`;
+    const s3FolderPath = `proofs/organization_${organization_id}/emails`;
 
     const result = await fileStorageService.uploadLocalFile(
       body.file_path,
-      `${s3FolderPath}/${body.file_name}`
+      `${s3FolderPath}/${body.file_name}`,
     );
 
     // Return path for database
