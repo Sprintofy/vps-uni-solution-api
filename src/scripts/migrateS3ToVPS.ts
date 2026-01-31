@@ -589,6 +589,7 @@ async function uploadToVPSWithRateLimit(
 
       formData.append("isPublic", "true");
       formData.append("overwriteDeleted", "true");
+      formData.append("preserveFileName", "true"); // Add this to keep original name
 
       const response = await vpsClient.post(
         `/api/v1/files/upload/${CONFIG.vps.bucketName}`,
